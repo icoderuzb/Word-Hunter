@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>So'z Hujumi - Yozish O'yini</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="icon" type="image/png" href="favicon.png?v=1">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0f172a;
+            font-family: 'Courier New', Courier, monospace;
+            touch-action: none;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .word-label {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
+            pointer-events: none;
+            transition: transform 0.05s linear;
+        }
+
+        .boss-label {
+            color: #f87171;
+            text-shadow: 4px 4px 0 #450a0a, -4px -4px 0 #450a0a, 4px -4px 0 #450a0a, -4px 4px 0 #450a0a, 0 0 20px #ef4444;
+            font-size: 4rem;
+            z-index: 10;
+        }
+
+        .typed {
+            color: #4ade80;
+            text-shadow: 0 0 10px #4ade80;
+        }
+
+        .untyped {
+            color: inherit;
+        }
+
+        @media (max-width: 600px) {
+            .word-label {
+                font-size: 1.8rem !important;
+            }
+
+            .boss-label {
+                font-size: 2.5rem !important;
+            }
+        }
+
+        input[type="radio"]:checked+label {
+            background-color: #3b82f6;
+            border-color: #60a5fa;
+            color: white;
+        }
+
+        /* Oynalarning ichi sig'may qolsa chiroyli skroll qilish uchun yordamchi klass */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen relative select-none">
+
+    <div id="flashOverlay"
+        class="absolute inset-0 bg-red-600 opacity-0 pointer-events-none z-15 transition-opacity duration-150"></div>
+
+    <div
+        class="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 bg-slate-900/80 px-3 py-2 sm:px-6 sm:py-4 rounded-xl shadow-xl backdrop-blur-md border border-slate-700 flex flex-col gap-1">
+        <h2 class="text-sm sm:text-xl font-bold text-white tracking-wider">Hisob: <span id="scoreDisplay"
+                class="text-green-400 font-black">0</span></h2>
+        <h3 class="text-xs sm:text-lg font-bold text-slate-300 tracking-widest">Daraja: <span id="levelDisplay"
+                class="text-blue-400">1</span></h3>
+        <div class="h-px bg-slate-600 my-1 w-full"></div>
+        <h4 class="text-xs sm:text-md font-bold text-yellow-500 tracking-wider">Rekord: <span
+                id="recordDisplay">0</span></h4>
+    </div>
+
+    <div
+        class="absolute top-4 right-4 z-10 bg-slate-900/80 px-4 py-2 rounded-xl shadow-xl backdrop-blur-md border border-slate-700 text-right hidden sm:block">
+        <p class="text-sm font-medium text-slate-300">Rejim: <span id="diffDisplayTop"
+                class="text-blue-400 font-bold uppercase">O'rtacha</span></p>
+        <p class="text-xs text-slate-400 mt-1">Bekor qilish: <kbd
+                class="bg-slate-700 px-1 rounded text-white">Backspace</kbd></p>
+    </div>
+
+    <div id="overlay"
+        class="absolute inset-0 bg-slate-900/95 z-20 flex flex-col items-center justify-start text-white backdrop-blur-lg transition-all duration-300 overflow-y-auto custom-scrollbar">
+
+        <div id="profileHeader" class="w-full text-center px-4 pt-6 sm:pt-10 shrink-0">
+            <p class="text-slate-300 font-bold text-sm sm:text-lg inline-flex items-center justify-center gap-2">
+                O'yinchi: <span id="playerNameDisplay"
+                    class="text-white bg-slate-800 px-3 py-1 rounded-lg border border-slate-600 shadow-inner">ICODERUZB</span>
+                <button onclick="openNameModal()"
+                    class="text-blue-400 hover:text-white hover:bg-blue-600 bg-slate-800 p-2 rounded-full cursor-pointer transition-colors flex items-center justify-center shadow-lg">✎</button>
+            </p>
+            <div class="mt-3">
+                <button onclick="showOverallStats()"
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-xl text-yellow-400 font-bold text-sm sm:text-base cursor-pointer shadow-lg transition">
+                    📊 Barcha Statistikani Ko'rish
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center w-full max-w-lg px-4 flex-grow my-auto py-8">
+            <h1 id="mainTitle"
+                class="text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 drop-shadow-2xl mb-6 text-center leading-normal py-2">
+                SO'ZLAR HUJUMI
+            </h1>
+
+            <div id="settingsBlock"
+                class="w-full bg-slate-800/80 p-4 sm:p-6 rounded-2xl border border-slate-600 mb-6 shadow-xl shrink-0">
+                <h3 class="text-center text-gray-300 font-bold mb-4 uppercase tracking-wider text-sm sm:text-base">
+                    Qiyinlik darajasini tanlang</h3>
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <div class="flex-1">
+                        <input type="radio" id="diffEasy" name="difficulty" value="easy" class="hidden"
+                            onchange="changeDifficulty('easy')">
+                        <label for="diffEasy"
+                            class="block text-center border-2 border-slate-600 rounded-xl p-3 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-sm sm:text-base">OSON</label>
+                    </div>
+                    <div class="flex-1">
+                        <input type="radio" id="diffMedium" name="difficulty" value="medium" class="hidden" checked
+                            onchange="changeDifficulty('medium')">
+                        <label for="diffMedium"
+                            class="block text-center border-2 border-slate-600 rounded-xl p-3 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-sm sm:text-base">O'RTACHA</label>
+                    </div>
+                    <div class="flex-1">
+                        <input type="radio" id="diffHard" name="difficulty" value="hard" class="hidden"
+                            onchange="changeDifficulty('hard')">
+                        <label for="diffHard"
+                            class="block text-center border-2 border-slate-600 rounded-xl p-3 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-sm sm:text-base">QIYIN</label>
+                    </div>
+                </div>
+                <p id="diffDesc" class="text-center text-xs text-gray-400 mt-4 h-4"></p>
+            </div>
+
+            <div id="currentStatsBlock"
+                class="hidden w-full grid grid-cols-2 gap-3 sm:gap-4 bg-slate-800/80 p-4 sm:p-6 rounded-2xl border border-slate-600 mb-6 shadow-2xl shrink-0">
+                <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700 relative">
+                    <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Tezlik (WPM)
+                    </p>
+                    <p id="statWPM" class="text-3xl sm:text-5xl font-black text-blue-400 drop-shadow-lg">0</p>
+                </div>
+                <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700">
+                    <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Aniqlik</p>
+                    <p id="statAcc" class="text-3xl sm:text-5xl font-black text-green-400 drop-shadow-lg">0%</p>
+                </div>
+                <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700">
+                    <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">So'zlar</p>
+                    <p id="statWords" class="text-2xl sm:text-4xl font-bold text-yellow-400">0</p>
+                </div>
+                <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700">
+                    <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Daraja</p>
+                    <p id="statLevel" class="text-2xl sm:text-4xl font-bold text-purple-400">1</p>
+                </div>
+            </div>
+
+            <button id="startBtn" onclick="startGame()"
+                class="w-full bg-green-600 hover:bg-green-500 border border-green-400 rounded-xl p-4 text-center shadow-lg transition-transform transform active:scale-95 cursor-pointer shrink-0">
+                <span class="text-lg sm:text-xl font-bold text-white block">O'YINNI BOSHLASH</span>
+                <span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>
+            </button>
+
+            <button id="backToSettingsBtn" onclick="showSettings()"
+                class="hidden mt-4 text-gray-400 hover:text-white underline text-sm cursor-pointer shrink-0">
+                Sozlamalarni o'zgartirish
+            </button>
+        </div>
+
+        <footer
+            class="w-full bg-slate-950/50 border-t border-slate-800 py-4 shrink-0 flex flex-col items-center justify-center mt-auto">
+            <div class="flex flex-row items-center justify-center gap-6 sm:gap-10">
+                <a href="https://t.me/icoderuzb" target="_blank" rel="noopener noreferrer"
+                    class="flex items-center gap-2 hover:text-blue-400 transition-colors text-sm sm:text-base font-bold text-slate-400">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" />
+                    </svg>
+                    <span class="hidden sm:inline">Telegram</span>
+                </a>
+                <a href="https://instagram.com/icoderuzb" target="_blank" rel="noopener noreferrer"
+                    class="flex items-center gap-2 hover:text-pink-500 transition-colors text-sm sm:text-base font-bold text-slate-400">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.88z" />
+                    </svg>
+                    <span class="hidden sm:inline">Instagram</span>
+                </a>
+                <a href="https://github.com/icoderuzb" target="_blank" rel="noopener noreferrer"
+                    class="flex items-center gap-2 hover:text-white transition-colors text-sm sm:text-base font-bold text-slate-400">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.332-5.467-5.93 0-1.31.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                    </svg>
+                    <span class="hidden sm:inline">GitHub</span>
+                </a>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">&copy; 2026 Word Game. Barcha huquqlar himoyalangan.</p>
+        </footer>
+    </div>
+
+    <div id="nameModal"
+        class="hidden absolute inset-0 bg-slate-950/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-slate-800 border border-slate-600 rounded-2xl p-6 sm:p-8 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300"
+            id="nameModalContent">
+            <h3 class="text-2xl font-bold text-white mb-4 text-center tracking-wider">Ismingizni kiriting</h3>
+            <input type="text" id="newNameInput"
+                class="w-full bg-slate-900 border border-slate-500 text-white rounded-xl px-4 py-3 mb-6 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all text-center text-lg font-bold"
+                placeholder="ICODERUZB" maxlength="20">
+            <div class="flex gap-4">
+                <button onclick="closeNameModal()"
+                    class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-colors">Bekor
+                    qilish</button>
+                <button onclick="saveNameFromModal()"
+                    class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-blue-500/30">Saqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="overallStatsModal"
+        class="hidden absolute inset-0 bg-slate-950/95 z-50 flex-col items-center justify-start p-4 custom-scrollbar overflow-y-auto backdrop-blur-xl">
+
+        <h2 class="text-3xl sm:text-5xl font-black text-white mb-2 tracking-widest text-center mt-8">🏆 SIZNING
+            STATISTIKANGIZ</h2>
+        <p class="text-slate-400 mb-8 text-center text-sm sm:text-base">Kibersurfer: <span id="modalPlayerName"
+                class="font-bold text-blue-400">ICODERUZB</span></p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl shrink-0">
+            <div class="bg-slate-900 border-t-4 border-green-500 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 opacity-10 text-9xl">🎈</div>
+                <h3 class="text-2xl font-bold text-green-400 mb-6 text-center tracking-widest">OSON</h3>
+                <div class="space-y-4 text-sm sm:text-lg">
+                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
+                            yuqori hisob:</span> <span id="stScoreEasy" class="font-black text-white">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
+                            yaxshi WPM:</span> <span id="stWPMEasy" class="font-black text-blue-300">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-2"><span
+                            class="text-slate-400">O'yinlar soni:</span> <span id="stGamesEasy"
+                            class="font-bold text-white">0</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Yozilgan so'zlar:</span> <span
+                            id="stWordsEasy" class="font-bold text-yellow-400">0</span></div>
+                </div>
+            </div>
+
+            <div
+                class="bg-slate-900 border-t-4 border-blue-500 rounded-2xl p-6 shadow-2xl relative overflow-hidden lg:scale-105 z-10 border-b border-l border-r border-slate-700">
+                <div class="absolute top-0 right-0 opacity-10 text-9xl">⚔️</div>
+                <h3 class="text-2xl font-bold text-blue-400 mb-6 text-center tracking-widest">O'RTACHA</h3>
+                <div class="space-y-4 text-sm sm:text-lg">
+                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
+                            yuqori hisob:</span> <span id="stScoreMedium" class="font-black text-white">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
+                            yaxshi WPM:</span> <span id="stWPMMedium" class="font-black text-blue-300">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-2"><span
+                            class="text-slate-400">O'yinlar soni:</span> <span id="stGamesMedium"
+                            class="font-bold text-white">0</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Yozilgan so'zlar:</span> <span
+                            id="stWordsMedium" class="font-bold text-yellow-400">0</span></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border-t-4 border-red-500 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 opacity-10 text-9xl">🔥</div>
+                <h3 class="text-2xl font-bold text-red-400 mb-6 text-center tracking-widest">QIYIN</h3>
+                <div class="space-y-4 text-sm sm:text-lg">
+                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
+                            yuqori hisob:</span> <span id="stScoreHard" class="font-black text-white">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
+                            yaxshi WPM:</span> <span id="stWPMHard" class="font-black text-blue-300">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-2"><span
+                            class="text-slate-400">O'yinlar soni:</span> <span id="stGamesHard"
+                            class="font-bold text-white">0</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Yozilgan so'zlar:</span> <span
+                            id="stWordsHard" class="font-bold text-yellow-400">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="closeOverallStats()"
+            class="mt-8 mb-8 bg-slate-700 hover:bg-slate-600 px-8 py-4 rounded-xl text-white font-bold tracking-widest transition cursor-pointer shadow-lg shrink-0">
+            ORTGA QAYTISH
+        </button>
+    </div>
+
+    <input type="text" id="mobileInput" class="absolute top-0 left-0 opacity-0 w-0 h-0" autocomplete="off"
+        autocorrect="off" autocapitalize="off" spellcheck="false">
+
+    <div id="labelsContainer" class="absolute inset-0 pointer-events-none z-0"></div>
+
+    <script>
+        // DOM ELEMENTLAR
+        const overlay = document.getElementById('overlay');
+        const mainTitle = document.getElementById('mainTitle');
+        const settingsBlock = document.getElementById('settingsBlock');
+        const currentStatsBlock = document.getElementById('currentStatsBlock');
+        const startBtn = document.getElementById('startBtn');
+        const backToSettingsBtn = document.getElementById('backToSettingsBtn');
+        const mobileInput = document.getElementById('mobileInput');
+        const profileHeader = document.getElementById('profileHeader');
+
+        const playerNameDisplay = document.getElementById('playerNameDisplay');
+        const modalPlayerName = document.getElementById('modalPlayerName');
+        const overallStatsModal = document.getElementById('overallStatsModal');
+
+        const nameModal = document.getElementById('nameModal');
+        const newNameInput = document.getElementById('newNameInput');
+        const nameModalContent = document.getElementById('nameModalContent');
+
+        const statWPM = document.getElementById('statWPM'); const statAcc = document.getElementById('statAcc');
+        const statWords = document.getElementById('statWords'); const statLevel = document.getElementById('statLevel');
+        const scoreDisplay = document.getElementById('scoreDisplay'); const levelDisplay = document.getElementById('levelDisplay');
+        const recordDisplay = document.getElementById('recordDisplay'); const diffDisplayTop = document.getElementById('diffDisplayTop');
+        const diffDesc = document.getElementById('diffDesc'); const labelsContainer = document.getElementById('labelsContainer');
+        const flashOverlay = document.getElementById('flashOverlay');
+
+        // LUG'AT
+        const lvl1Words = ["olma", "suv", "gul", "bol", "non", "kuz", "yoz", "uy", "tom", "ona", "uka", "opa", "kuch", "qand", "qish", "kema", "fil", "sher", "qoy", "tog", "bog", "qiz", "xat", "choy", "sir", "til", "yuz", "koz", "zar", "dam"];
+        const lvl2Words = ["bahor", "kitob", "qalam", "anjir", "xurmo", "shahar", "osmon", "bulut", "yigit", "daryo", "vatan", "tuya", "paxta", "havo", "dars", "olcha", "piyoz", "sabzi", "bodom", "hayot", "soat"];
+        const lvl3Words = ["quyosh", "choynak", "o'rtoq", "daftar", "maktab", "daraxt", "bayram", "yulduz", "chiroq", "mehmon", "yomg'ir", "yaproq", "shirin", "tuman", "doston", "baraka", "bayroq", "quvnoq", "pichoq"];
+        const lvl4Words = ["toshbaqa", "kelajak", "imtihon", "samolyot", "kamalak", "kapalak", "darslik", "tarbiya", "poytaxt", "sadoqat", "diyonat", "tabiat", "jasorat", "g'alaba", "orzu"];
+        const lvl5Words = ["muvaffaqiyat", "texnologiya", "respublika", "universitet", "mustaqillik", "o'qituvchi", "sarguzasht", "vatanparvar", "tadbirkorlik", "konstitutsiya"];
+        const bossWords = ["KIBERXAVFSIZLIK", "ENSIKLOPEDIYA", "QAHRAMONLIK", "INFRATUZILMA", "KOSMONAVTIKA", "LABORATORIYA", "ARXITEKTURA", "ASTRONOMIYA"];
+
+        // PROFIL VA STATISTIKA (V3)
+        let userProfile = JSON.parse(localStorage.getItem('typingGameProfile_v3')) || {
+            playerName: "ICODERUZB",
+            lastDifficulty: 'medium',
+            stats: {
+                easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 },
+                medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 },
+                hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }
+            }
+        };
+
+        playerNameDisplay.innerText = userProfile.playerName;
+        modalPlayerName.innerText = userProfile.playerName;
+
+        const difficultySettings = {
+            easy: { speedBase: 0.04, spawnRate: 2500, label: 'Oson', desc: "Sekin tezlik va katta tanaffus." },
+            medium: { speedBase: 0.08, spawnRate: 1500, label: "O'rtacha", desc: "Standart o'yin tezligi." },
+            hard: { speedBase: 0.12, spawnRate: 1000, label: 'Qiyin', desc: "Juda tez. Professional yozuvchilar uchun!" }
+        };
+
+        let currentDiff = userProfile.lastDifficulty;
+        let baseSpeed = difficultySettings[currentDiff].speedBase;
+        let baseSpawnRate = difficultySettings[currentDiff].spawnRate;
+
+        document.getElementById('diff' + currentDiff.charAt(0).toUpperCase() + currentDiff.slice(1)).checked = true;
+        diffDesc.innerText = difficultySettings[currentDiff].desc;
+        recordDisplay.innerText = userProfile.stats[currentDiff].highScore;
+        diffDisplayTop.innerText = difficultySettings[currentDiff].label;
+
+        function saveProfile() {
+            localStorage.setItem('typingGameProfile_v3', JSON.stringify(userProfile));
+        }
+
+        // --- ISM KIRITISH MODALI FUNKSIYALARI ---
+        function openNameModal() {
+            newNameInput.value = userProfile.playerName;
+            nameModal.classList.remove('hidden');
+            setTimeout(() => {
+                nameModal.classList.remove('opacity-0');
+                nameModalContent.classList.remove('scale-95');
+                nameModalContent.classList.add('scale-100');
+                newNameInput.focus();
+            }, 10);
+        }
+
+        function closeNameModal() {
+            nameModal.classList.add('opacity-0');
+            nameModalContent.classList.remove('scale-100');
+            nameModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                nameModal.classList.add('hidden');
+                mobileInput.focus();
+            }, 300);
+        }
+
+        function saveNameFromModal() {
+            let newName = newNameInput.value;
+            if (newName && newName.trim() !== "") {
+                userProfile.playerName = newName.trim().substring(0, 20);
+                playerNameDisplay.innerText = userProfile.playerName;
+                modalPlayerName.innerText = userProfile.playerName;
+                saveProfile();
+            }
+            closeNameModal();
+        }
+
+        newNameInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') saveNameFromModal();
+        });
+        // ----------------------------------------------
+
+        function changeDifficulty(diff) {
+            currentDiff = diff;
+            baseSpeed = difficultySettings[diff].speedBase;
+            baseSpawnRate = difficultySettings[diff].spawnRate;
+            diffDesc.innerText = difficultySettings[diff].desc;
+            userProfile.lastDifficulty = diff;
+            saveProfile();
+            recordDisplay.innerText = userProfile.stats[diff].highScore;
+            diffDisplayTop.innerText = difficultySettings[diff].label;
+        }
+
+        function showSettings() {
+            currentStatsBlock.classList.add('hidden');
+            backToSettingsBtn.classList.add('hidden');
+            settingsBlock.classList.remove('hidden');
+
+            mainTitle.innerText = "SO'ZLAR HUJUMI";
+            mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 drop-shadow-2xl mb-6 text-center leading-normal py-2";
+            startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">O'YINNI BOSHLASH</span><span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>`;
+        }
+
+        function showOverallStats() {
+            ['easy', 'medium', 'hard'].forEach(diff => {
+                const Diff = diff.charAt(0).toUpperCase() + diff.slice(1);
+                document.getElementById('stScore' + Diff).innerText = userProfile.stats[diff].highScore;
+                document.getElementById('stWPM' + Diff).innerText = userProfile.stats[diff].bestWPM;
+                document.getElementById('stGames' + Diff).innerText = userProfile.stats[diff].gamesPlayed;
+                document.getElementById('stWords' + Diff).innerText = userProfile.stats[diff].wordsTyped;
+            });
+            overlay.classList.add('hidden');
+            overallStatsModal.classList.remove('hidden');
+            overallStatsModal.classList.add('flex');
+        }
+
+        function closeOverallStats() {
+            overallStatsModal.classList.add('hidden');
+            overallStatsModal.classList.remove('flex');
+            overlay.classList.remove('hidden');
+        }
+
+        // O'YIN MANTIG'I
+        let gameActive = false; let score = 0; let level = 1; let speed = 0;
+        let activeWords = []; let targetedWord = null; let wordsSpawnedCount = 0; let lastSpawnTime = 0;
+        let totalWordsTyped = 0; let correctStrokes = 0; let totalStrokes = 0; let gameStartTime = 0;
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') return;
+            const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            if (type === 'type') { osc.type = 'sine'; osc.frequency.setValueAtTime(800 + (Math.random() * 200), audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.05); gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05); osc.start(); osc.stop(audioCtx.currentTime + 0.05); }
+            else if (type === 'destroy') { osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.2); gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2); osc.start(); osc.stop(audioCtx.currentTime + 0.2); }
+            else if (type === 'boss_spawn') { osc.type = 'square'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 1.0); gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0); osc.start(); osc.stop(audioCtx.currentTime + 1.0); }
+            else if (type === 'error') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); osc.start(); osc.stop(audioCtx.currentTime + 0.15); }
+            else if (type === 'victory') { osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.2); osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.4); osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.6); gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5); osc.start(); osc.stop(audioCtx.currentTime + 1.5); }
+        }
+
+        const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100); camera.position.set(0, 2, 8);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(window.innerWidth, window.innerHeight); document.body.insertBefore(renderer.domElement, labelsContainer);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); scene.add(ambientLight);
+        const gridHelper = new THREE.GridHelper(200, 100, 0x4ade80, 0x1e293b); gridHelper.position.y = -2; scene.add(gridHelper);
+        const boxGeo = new THREE.BoxGeometry(3, 1, 1);
+        const normalMat = new THREE.MeshBasicMaterial({ color: 0x334155, wireframe: true }); const bossMat = new THREE.MeshBasicMaterial({ color: 0xef4444, wireframe: true });
+
+        function getFrustumBounds(z) {
+            const distance = Math.abs(camera.position.z - z); const vFov = (camera.fov * Math.PI) / 180; const height = 2 * Math.tan(vFov / 2) * distance; const width = height * camera.aspect;
+            const marginFactor = window.innerWidth < 600 ? 0.8 : 0.5;
+            return { xMin: (-width / 2) * marginFactor, xMax: (width / 2) * marginFactor, yMin: 1.5, yMax: (height / 2) * 0.6 };
+        }
+
+        function isLetter(char) {
+            if (!char || char.length !== 1) return false;
+            const isAlpha = char.toLowerCase() !== char.toUpperCase();
+            const isApostrophe = ["'", "`", "‘", "’"].includes(char);
+            return isAlpha || isApostrophe;
+        }
+
+        function spawnWord() {
+            if (!gameActive) return;
+            const activeFirstLetters = activeWords.map(w => { let firstChar = w.text[0].toLowerCase(); if (["'", "`", "‘", "’"].includes(firstChar)) firstChar = w.text[1].toLowerCase(); return firstChar; });
+            wordsSpawnedCount++; let isBoss = false; let text = "";
+
+            if (wordsSpawnedCount % 10 === 0) {
+                isBoss = true; let availableBosses = bossWords.filter(w => !activeFirstLetters.includes(w[0].toLowerCase())); if (availableBosses.length === 0) availableBosses = bossWords;
+                text = availableBosses[Math.floor(Math.random() * availableBosses.length)]; playSound('boss_spawn');
+            } else {
+                let sourceList = lvl1Words;
+                if (score < 500) { level = 1; sourceList = lvl1Words; } else if (score < 1500) { level = 2; sourceList = lvl1Words.concat(lvl2Words); } else if (score < 3000) { level = 3; sourceList = lvl2Words.concat(lvl3Words); } else if (score < 5000) { level = 4; sourceList = lvl3Words.concat(lvl4Words); } else { level = 5; sourceList = lvl4Words.concat(lvl5Words); }
+                levelDisplay.innerText = level;
+                let availableWords = sourceList.filter(w => !activeFirstLetters.includes(w[0].toLowerCase())); if (availableWords.length === 0) { wordsSpawnedCount--; return; }
+                text = availableWords[Math.floor(Math.random() * availableWords.length)];
+            }
+
+            const bounds = getFrustumBounds(-90); let xPos, yPos; let overlapping = true; let attempts = 0;
+            while (overlapping && attempts < 30) {
+                xPos = bounds.xMin + Math.random() * (bounds.xMax - bounds.xMin); yPos = bounds.yMin + Math.random() * (bounds.yMax - bounds.yMin);
+                if (isBoss) { xPos = 0; yPos = bounds.yMax / 2; }
+                overlapping = false;
+                for (let w of activeWords) {
+                    if (w.mesh.position.z < -60) {
+                        let distX = Math.abs(w.mesh.position.x - xPos); let distY = Math.abs(w.mesh.position.y - yPos);
+                        const xRadius = window.innerWidth < 600 ? 5 : 10;
+                        if (distX < xRadius && distY < 4) { overlapping = true; break; }
+                    }
+                }
+                attempts++;
+            }
+
+            const mesh = new THREE.Mesh(boxGeo, isBoss ? bossMat.clone() : normalMat.clone()); mesh.position.set(xPos, yPos, -90); if (isBoss) mesh.scale.set(3, 3, 3); scene.add(mesh);
+            const label = document.createElement('div'); label.className = `word-label ${isBoss ? 'boss-label' : ''}`; label.innerHTML = `<span class="untyped">${text}</span>`; labelsContainer.appendChild(label);
+            activeWords.push({ text: text, typedLength: 0, mesh: mesh, label: label, isBoss: isBoss, speedMult: isBoss ? 0.4 : 1.0 });
+        }
+
+        function handleKeyPress(keyStr) {
+            if (!gameActive) { if (keyStr === 'Enter') startGame(); return; }
+            if (keyStr === 'Backspace' && targetedWord) { targetedWord.typedLength = 0; targetedWord.mesh.material.color.setHex(targetedWord.isBoss ? 0xef4444 : 0x334155); updateLabel(targetedWord); targetedWord = null; playSound('error'); return; }
+            if (!isLetter(keyStr)) return;
+
+            totalStrokes++; let typedChar = keyStr.toLowerCase();
+
+            if (!targetedWord) {
+                let closestWord = null; let closestDist = Infinity;
+                for (let wordObj of activeWords) {
+                    let firstExpectedChar = wordObj.text[0].toLowerCase();
+                    if (firstExpectedChar === typedChar) { if (wordObj.mesh.position.z < closestDist) { closestDist = wordObj.mesh.position.z; closestWord = wordObj; } }
+                }
+                if (closestWord) { targetedWord = closestWord; targetedWord.mesh.material.color.setHex(0x4ade80); }
+            }
+
+            if (targetedWord) {
+                let expectedChar = targetedWord.text[targetedWord.typedLength].toLowerCase();
+                if (["'", "`", "‘", "’"].includes(expectedChar)) {
+                    targetedWord.typedLength++;
+                    if (targetedWord.typedLength === targetedWord.text.length) { correctStrokes++; playSound('type'); destroyWord(targetedWord); return; }
+                    expectedChar = targetedWord.text[targetedWord.typedLength].toLowerCase();
+                }
+
+                if (typedChar === expectedChar) {
+                    targetedWord.typedLength++; correctStrokes++; playSound('type'); updateLabel(targetedWord);
+                    if (targetedWord.isBoss) { targetedWord.mesh.position.x += (Math.random() - 0.5) * 0.5; targetedWord.mesh.position.y += (Math.random() - 0.5) * 0.5; }
+                    if (targetedWord.typedLength < targetedWord.text.length) {
+                        let nextChar = targetedWord.text[targetedWord.typedLength];
+                        if (["'", "`", "‘", "’"].includes(nextChar)) { targetedWord.typedLength++; updateLabel(targetedWord); }
+                    }
+                    if (targetedWord.typedLength === targetedWord.text.length) destroyWord(targetedWord);
+                } else { playSound('error'); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); }
+            } else { playSound('error'); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' && e.target !== mobileInput) return;
+            if (e.target === mobileInput && e.key !== 'Enter' && e.key !== 'Backspace') return;
+            handleKeyPress(e.key);
+        });
+
+        mobileInput.addEventListener('input', (e) => { const val = e.target.value; if (val.length > 0) { handleKeyPress(val[val.length - 1]); e.target.value = ''; } });
+        document.body.addEventListener('click', (e) => {
+            if (gameActive && e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A' && e.target.closest('a') === null) {
+                mobileInput.focus();
+            }
+        });
+
+        function updateLabel(wordObj) { const typedStr = wordObj.text.substring(0, wordObj.typedLength); const untypedStr = wordObj.text.substring(wordObj.typedLength); wordObj.label.innerHTML = `<span class="typed">${typedStr}</span><span class="untyped">${untypedStr}</span>`; }
+
+        function destroyWord(wordObj) {
+            playSound('destroy'); scene.remove(wordObj.mesh); wordObj.label.remove(); activeWords = activeWords.filter(w => w !== wordObj); targetedWord = null; totalWordsTyped++;
+            const multiplier = currentDiff === 'easy' ? 1 : (currentDiff === 'medium' ? 1.5 : 2);
+            const points = wordObj.isBoss ? wordObj.text.length * 50 * multiplier : wordObj.text.length * 10 * multiplier;
+            score += Math.round(points); scoreDisplay.innerText = score; speed += 0.001;
+        }
+
+        function updateLabelsPosition() {
+            activeWords.forEach(wordObj => {
+                const vector = wordObj.mesh.position.clone(); vector.project(camera);
+                const x = (vector.x * .5 + .5) * window.innerWidth; const y = (vector.y * -.5 + .5) * window.innerHeight;
+                wordObj.label.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+                const baseScale = wordObj.isBoss ? 4.5 : 2.5; const scale = Math.max(0.5, 1 - (Math.abs(wordObj.mesh.position.z) / 90));
+                if (window.innerWidth > 600) { wordObj.label.style.fontSize = `${scale * baseScale}rem`; }
+            });
+        }
+
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (gameActive) {
+                gridHelper.position.z += speed; if (gridHelper.position.z > 10) gridHelper.position.z = 0;
+                for (let i = activeWords.length - 1; i >= 0; i--) {
+                    let wordObj = activeWords[i]; wordObj.mesh.position.z += speed * wordObj.speedMult; wordObj.mesh.rotation.y = Math.sin(Date.now() * 0.002) * 0.2;
+                    if (wordObj.mesh.position.z > 5) gameOver();
+                }
+                updateLabelsPosition();
+                const currentTime = Date.now();
+                if (currentTime - lastSpawnTime >= baseSpawnRate) { spawnWord(); lastSpawnTime = currentTime; }
+            }
+            renderer.render(scene, camera);
+        }
+
+        function startGame() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            activeWords.forEach(w => { scene.remove(w.mesh); w.label.remove(); });
+            activeWords = []; targetedWord = null; score = 0; level = 1; wordsSpawnedCount = 0; speed = baseSpeed;
+            totalWordsTyped = 0; correctStrokes = 0; totalStrokes = 0; gameStartTime = Date.now(); lastSpawnTime = Date.now();
+            scoreDisplay.innerText = score; levelDisplay.innerText = level;
+
+            gameActive = true;
+            overlay.classList.add('hidden'); overlay.classList.remove('flex');
+            settingsBlock.classList.add('hidden'); currentStatsBlock.classList.add('hidden'); backToSettingsBtn.classList.add('hidden');
+
+            mobileInput.focus();
+        }
+
+        function gameOver() {
+            gameActive = false; mobileInput.blur();
+            let timeInMinutes = (Date.now() - gameStartTime) / 60000;
+            let wpm = timeInMinutes > 0 ? Math.round((correctStrokes / 5) / timeInMinutes) : 0;
+            let accuracy = totalStrokes > 0 ? Math.round((correctStrokes / totalStrokes) * 100) : 0;
+
+            let curStats = userProfile.stats[currentDiff];
+            curStats.gamesPlayed++;
+            curStats.wordsTyped += totalWordsTyped;
+            if (wpm > curStats.bestWPM) curStats.bestWPM = wpm;
+
+            let isNewRecord = false;
+            if (score > curStats.highScore && score > 0) {
+                curStats.highScore = score;
+                isNewRecord = true;
+            }
+
+            saveProfile();
+            recordDisplay.innerText = curStats.highScore;
+
+            if (isNewRecord) {
+                playSound('victory'); mainTitle.innerText = "YANGI REKORD! 🏆"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 to-yellow-600 drop-shadow-2xl mb-6 text-center leading-normal py-2";
+            } else {
+                playSound('error'); mainTitle.innerText = "MAG'LUBIYAT!"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-red-500 drop-shadow-2xl mb-6 text-center leading-normal py-2";
+            }
+
+            statWPM.innerText = wpm; statAcc.innerText = accuracy + "%"; statWords.innerText = totalWordsTyped; statLevel.innerText = level;
+            startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">YANA BIR BOR</span><span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>`;
+
+            currentStatsBlock.classList.remove('hidden'); backToSettingsBtn.classList.remove('hidden');
+            overlay.classList.remove('hidden'); overlay.classList.add('flex'); overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.95)';
+        }
+
+        animate();
+    </script>
+</body>
+
+</html>
