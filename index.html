@@ -4,15 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>So'z Hujumi - Yozish O'yini</title>
+    <title>Kiber-Kosmik So'z Hujumi</title>
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png?v=1">
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #0f172a;
+            background-color: #03050a;
             font-family: 'Courier New', Courier, monospace;
             touch-action: none;
         }
@@ -25,7 +25,7 @@
             position: absolute;
             transform: translate(-50%, -50%);
             color: white;
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 900;
             text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
             pointer-events: none;
@@ -34,9 +34,12 @@
 
         .boss-label {
             color: #f87171;
-            text-shadow: 4px 4px 0 #450a0a, -4px -4px 0 #450a0a, 4px -4px 0 #450a0a, -4px 4px 0 #450a0a, 0 0 20px #ef4444;
-            font-size: 4rem;
-            z-index: 10;
+            text-shadow: 4px 4px 0 #450a0a, 0 0 20px #ef4444;
+        }
+
+        .bomb-label {
+            color: #facc15;
+            text-shadow: 3px 3px 0 #713f12, 0 0 20px #eab308;
         }
 
         .typed {
@@ -48,13 +51,20 @@
             color: inherit;
         }
 
+        .perfect-msg {
+            position: absolute;
+            color: #38bdf8;
+            font-size: 2rem;
+            font-weight: 900;
+            text-shadow: 0 0 15px #0284c7;
+            pointer-events: none;
+            animation: floatUpFade 1s ease-out forwards;
+            z-index: 50;
+        }
+
         @media (max-width: 600px) {
             .word-label {
-                font-size: 1.8rem !important;
-            }
-
-            .boss-label {
-                font-size: 2.5rem !important;
+                font-size: 1.5rem !important;
             }
         }
 
@@ -77,11 +87,6 @@
             border-radius: 10px;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-
-        /* COMBO UCHUN ANIMATSIYA */
         @keyframes pop {
             0% {
                 transform: scale(1);
@@ -100,179 +105,254 @@
         .combo-pop {
             animation: pop 0.2s ease-in-out;
         }
+
+        @keyframes floatUpFade {
+            0% {
+                transform: translate(-50%, 0) scale(0.5);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -50px) scale(1.5);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 
-<body class="h-screen w-screen relative select-none">
+<body class="h-screen w-screen relative select-none text-white">
 
     <div id="flashOverlay"
         class="absolute inset-0 bg-red-600 opacity-0 pointer-events-none z-15 transition-opacity duration-150"></div>
+    <div id="nukeOverlay"
+        class="absolute inset-0 bg-white opacity-0 pointer-events-none z-[100] transition-opacity duration-300"></div>
 
-    <div
-        class="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 bg-slate-900/80 px-3 py-2 sm:px-6 sm:py-4 rounded-xl shadow-xl backdrop-blur-md border border-slate-700 flex flex-col gap-1">
-        <h2 class="text-sm sm:text-xl font-bold text-white tracking-wider">Hisob: <span id="scoreDisplay"
-                class="text-green-400 font-black">0</span></h2>
-        <h3 class="text-xs sm:text-lg font-bold text-slate-300 tracking-widest">Daraja: <span id="levelDisplay"
-                class="text-blue-400">1</span></h3>
-        <div class="h-px bg-slate-600 my-1 w-full"></div>
-        <h4 class="text-xs sm:text-md font-bold text-yellow-500 tracking-wider">Rekord: <span
-                id="recordDisplay">0</span></h4>
+    <div class="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex flex-col gap-2">
+        <div
+            class="bg-slate-900/80 px-3 py-2 sm:px-6 sm:py-3 rounded-xl shadow-xl backdrop-blur-md border border-slate-700 flex flex-col gap-1">
+            <h2 class="text-sm sm:text-xl font-bold tracking-wider">Hisob: <span id="scoreDisplay"
+                    class="text-green-400 font-black">0</span></h2>
+            <h3 class="text-xs sm:text-base font-bold text-slate-300 tracking-widest">Daraja: <span id="levelDisplay"
+                    class="text-blue-400">1</span></h3>
+            <div class="h-px bg-slate-600 my-1 w-full"></div>
+            <h4 class="text-xs sm:text-sm font-bold text-yellow-500 tracking-wider">Rekord: <span
+                    id="recordDisplay">0</span></h4>
+        </div>
+        <div
+            class="bg-slate-900/80 px-3 py-2 sm:px-6 sm:py-2 rounded-xl shadow-xl backdrop-blur-md border border-red-500/50 text-center">
+            <span id="healthDisplay" class="text-lg sm:text-xl tracking-widest">❤️❤️❤️</span>
+        </div>
     </div>
 
-    <div class="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
+    <div class="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 flex flex-col items-end gap-2">
+        <div class="flex gap-2">
+            <button id="pauseBtn" onclick="togglePause()"
+                class="hidden bg-slate-800 hover:bg-slate-700 text-white p-2 sm:px-4 sm:py-2 rounded-xl border border-slate-600 transition-colors shadow-lg cursor-pointer text-sm sm:text-base font-bold">
+                ⏸️ <span class="hidden sm:inline">Pauza</span>
+            </button>
+            <button id="muteBtn" onclick="toggleMute()"
+                class="bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-full border border-slate-600 transition-colors shadow-lg cursor-pointer">
+                🔊
+            </button>
+        </div>
+
         <div
             class="bg-slate-900/80 px-4 py-2 rounded-xl shadow-xl backdrop-blur-md border border-slate-700 text-right hidden sm:block">
             <p class="text-sm font-medium text-slate-300">Rejim: <span id="diffDisplayTop"
                     class="text-blue-400 font-bold uppercase">O'rtacha</span></p>
+            <p class="text-sm font-medium text-slate-300 mt-1">Til: <span id="langDisplayTop"
+                    class="text-green-400 font-bold uppercase">UZ</span></p>
             <p class="text-xs text-slate-400 mt-1">Bekor qilish: <kbd
                     class="bg-slate-700 px-1 rounded text-white">Backspace</kbd></p>
         </div>
 
         <div id="comboContainer"
-            class="hidden bg-slate-900/80 px-4 py-2 rounded-xl shadow-xl backdrop-blur-md border border-yellow-500/50 text-right mt-2">
+            class="hidden bg-slate-900/80 px-4 py-2 rounded-xl shadow-xl backdrop-blur-md border border-yellow-500/50 text-right">
             <p class="text-sm font-bold text-yellow-400 uppercase tracking-widest">Combo <span id="comboDisplay"
                     class="text-xl text-white">x1</span></p>
+            <p id="comboProgress" class="text-[10px] text-gray-400">0/10 so'z</p>
         </div>
+    </div>
+
+    <div id="pauseOverlay"
+        class="hidden absolute inset-0 bg-slate-950/80 z-[80] flex flex-col items-center justify-center backdrop-blur-md">
+        <h2 class="text-5xl font-black text-white tracking-widest mb-6">PAUZA</h2>
+        <button onclick="togglePause()"
+            class="bg-blue-600 hover:bg-blue-500 px-8 py-4 rounded-xl text-white font-bold tracking-wider shadow-lg cursor-pointer">DAVOM
+            ETISH</button>
     </div>
 
     <div id="overlay"
         class="absolute inset-0 bg-slate-900/95 z-20 flex flex-col items-center justify-start text-white backdrop-blur-lg transition-all duration-300 overflow-y-auto custom-scrollbar">
 
         <div id="profileHeader" class="w-full text-center px-4 pt-6 sm:pt-10 shrink-0">
-            <p class="text-slate-300 font-bold text-sm sm:text-lg inline-flex items-center justify-center gap-2">
+            <p class="text-slate-300 font-bold text-sm sm:text-lg flex flex-wrap items-center justify-center gap-2">
                 O'yinchi: <span id="playerNameDisplay"
                     class="text-white bg-slate-800 px-3 py-1 rounded-lg border border-slate-600 shadow-inner">ICODERUZB</span>
                 <button onclick="openNameModal()"
                     class="text-blue-400 hover:text-white hover:bg-blue-600 bg-slate-800 p-2 rounded-full cursor-pointer transition-colors flex items-center justify-center shadow-lg">✎</button>
             </p>
-            <div class="mt-3">
+            <p class="mt-2 text-yellow-400 font-black tracking-widest text-sm sm:text-base">Unvon: <span
+                    id="rankDisplay" class="text-white">Boshlovchi</span></p>
+
+            <div class="mt-4">
                 <button onclick="showOverallStats()"
-                    class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-xl text-yellow-400 font-bold text-sm sm:text-base cursor-pointer shadow-lg transition">
-                    📊 Barcha Statistikani Ko'rish
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-xl text-blue-400 font-bold text-sm sm:text-base cursor-pointer shadow-lg transition">
+                    📊 Statistikani Ko'rish
                 </button>
             </div>
         </div>
 
-        <div class="flex flex-col items-center justify-center w-full max-w-lg px-4 flex-grow my-auto py-8">
+        <div class="flex flex-col items-center justify-center w-full max-w-2xl px-4 flex-grow my-auto py-6">
             <h1 id="mainTitle"
-                class="text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 drop-shadow-2xl mb-6 text-center leading-normal py-2">
-                SO'ZLAR HUJUMI
+                class="text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 drop-shadow-2xl mb-4 text-center leading-normal py-2">
+                SO'Z HUJUMI
             </h1>
 
             <div id="settingsBlock"
-                class="w-full bg-slate-800/80 p-4 sm:p-6 rounded-2xl border border-slate-600 mb-6 shadow-xl shrink-0">
-                <h3 class="text-center text-gray-300 font-bold mb-4 uppercase tracking-wider text-sm sm:text-base">
-                    Qiyinlik darajasini tanlang</h3>
-                <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                    <div class="flex-1"><input type="radio" id="diffEasy" name="difficulty" value="easy" class="hidden"
-                            onchange="changeDifficulty('easy')"><label for="diffEasy"
-                            class="block text-center border-2 border-slate-600 rounded-xl p-3 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-sm sm:text-base">OSON</label>
-                    </div>
-                    <div class="flex-1"><input type="radio" id="diffMedium" name="difficulty" value="medium"
-                            class="hidden" checked onchange="changeDifficulty('medium')"><label for="diffMedium"
-                            class="block text-center border-2 border-slate-600 rounded-xl p-3 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-sm sm:text-base">O'RTACHA</label>
-                    </div>
-                    <div class="flex-1"><input type="radio" id="diffHard" name="difficulty" value="hard" class="hidden"
-                            onchange="changeDifficulty('hard')"><label for="diffHard"
-                            class="block text-center border-2 border-slate-600 rounded-xl p-3 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-sm sm:text-base">QIYIN</label>
+                class="w-full max-w-md bg-slate-800/80 p-4 sm:p-6 rounded-2xl border border-slate-600 mb-6 shadow-xl shrink-0 flex flex-col gap-4">
+
+                <div>
+                    <h3 class="text-center text-gray-300 font-bold mb-2 uppercase text-xs sm:text-sm tracking-wider">
+                        Lug'at tilini tanlang</h3>
+                    <div class="flex gap-2 justify-center flex-wrap sm:flex-nowrap">
+                        <div class="flex-1"><input type="radio" id="langUz" name="language" value="uz" class="hidden"
+                                onchange="changeLanguage('uz')"><label for="langUz"
+                                class="block text-center border-2 border-slate-600 rounded-xl p-2 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-xs sm:text-sm whitespace-nowrap">🇺🇿
+                                UZ</label></div>
+                        <div class="flex-1"><input type="radio" id="langKr" name="language" value="kr" class="hidden"
+                                onchange="changeLanguage('kr')"><label for="langKr"
+                                class="block text-center border-2 border-slate-600 rounded-xl p-2 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-xs sm:text-sm whitespace-nowrap">🇺🇿
+                                KR</label></div>
+                        <div class="flex-1"><input type="radio" id="langEn" name="language" value="en" class="hidden"
+                                onchange="changeLanguage('en')"><label for="langEn"
+                                class="block text-center border-2 border-slate-600 rounded-xl p-2 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-xs sm:text-sm whitespace-nowrap">🇬🇧
+                                EN</label></div>
+                        <div class="flex-1"><input type="radio" id="langRu" name="language" value="ru" class="hidden"
+                                onchange="changeLanguage('ru')"><label for="langRu"
+                                class="block text-center border-2 border-slate-600 rounded-xl p-2 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-xs sm:text-sm whitespace-nowrap">🇷🇺
+                                RU</label></div>
                     </div>
                 </div>
-                <p id="diffDesc" class="text-center text-xs text-gray-400 mt-4 h-4"></p>
+
+                <hr class="border-slate-700">
+
+                <div>
+                    <h3 class="text-center text-gray-300 font-bold mb-2 uppercase text-xs sm:text-sm tracking-wider">
+                        Qiyinlik darajasi</h3>
+                    <div class="flex gap-2 justify-center">
+                        <div class="flex-1"><input type="radio" id="diffEasy" name="difficulty" value="easy"
+                                class="hidden" onchange="changeDifficulty('easy')"><label for="diffEasy"
+                                class="block text-center border-2 border-slate-600 rounded-xl p-2 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-sm">OSON</label>
+                        </div>
+                        <div class="flex-1"><input type="radio" id="diffMedium" name="difficulty" value="medium"
+                                class="hidden" checked onchange="changeDifficulty('medium')"><label for="diffMedium"
+                                class="block text-center border-2 border-slate-600 rounded-xl p-2 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-sm">O'RTA</label>
+                        </div>
+                        <div class="flex-1"><input type="radio" id="diffHard" name="difficulty" value="hard"
+                                class="hidden" onchange="changeDifficulty('hard')"><label for="diffHard"
+                                class="block text-center border-2 border-slate-600 rounded-xl p-2 cursor-pointer hover:bg-slate-700 transition-colors text-slate-300 font-bold text-sm">QIYIN</label>
+                        </div>
+                    </div>
+                    <p id="diffDesc" class="text-center text-xs text-gray-400 mt-3 h-4"></p>
+                </div>
             </div>
 
             <div id="currentStatsBlock"
-                class="hidden w-full grid grid-cols-2 gap-3 sm:gap-4 bg-slate-800/80 p-4 sm:p-6 rounded-2xl border border-slate-600 mb-6 shadow-2xl shrink-0">
-                <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700 relative">
+                class="hidden w-full grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 bg-slate-800/80 p-4 sm:p-6 rounded-2xl border border-slate-600 mb-6 shadow-2xl shrink-0">
+                <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700">
                     <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Tezlik (WPM)
                     </p>
-                    <p id="statWPM" class="text-3xl sm:text-5xl font-black text-blue-400 drop-shadow-lg">0</p>
+                    <p id="statWPM" class="text-3xl sm:text-4xl font-black text-blue-400">0</p>
                 </div>
                 <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700">
                     <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Aniqlik</p>
-                    <p id="statAcc" class="text-3xl sm:text-5xl font-black text-green-400 drop-shadow-lg">0%</p>
+                    <p id="statAcc" class="text-3xl sm:text-4xl font-black text-green-400">0%</p>
+                </div>
+                <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700">
+                    <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Vaqt</p>
+                    <p id="statTime" class="text-3xl sm:text-4xl font-black text-purple-400">00:00</p>
                 </div>
                 <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700">
                     <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">So'zlar</p>
-                    <p id="statWords" class="text-2xl sm:text-4xl font-bold text-yellow-400">0</p>
+                    <p id="statWords" class="text-2xl sm:text-3xl font-bold text-yellow-400">0</p>
                 </div>
                 <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700">
                     <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Daraja</p>
-                    <p id="statLevel" class="text-2xl sm:text-4xl font-bold text-purple-400">1</p>
+                    <p id="statLevel" class="text-2xl sm:text-3xl font-bold text-pink-400">1</p>
+                </div>
+                <div class="text-center bg-slate-900/50 p-2 sm:p-4 rounded-xl border border-slate-700">
+                    <p class="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Max Combo
+                    </p>
+                    <p id="statCombo" class="text-2xl sm:text-3xl font-bold text-orange-400">x1</p>
                 </div>
             </div>
 
             <button id="startBtn" onclick="startGame()"
-                class="w-full bg-green-600 hover:bg-green-500 border border-green-400 rounded-xl p-4 text-center shadow-lg transition-transform transform active:scale-95 cursor-pointer shrink-0">
+                class="w-full max-w-md bg-green-600 hover:bg-green-500 border border-green-400 rounded-xl p-4 text-center shadow-lg transition-transform transform active:scale-95 cursor-pointer shrink-0">
                 <span class="text-lg sm:text-xl font-bold text-white block">O'YINNI BOSHLASH</span>
                 <span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>
             </button>
 
             <button id="backToSettingsBtn" onclick="showSettings()"
-                class="hidden mt-4 text-gray-400 hover:text-white underline text-sm cursor-pointer shrink-0">
-                Sozlamalarni o'zgartirish
-            </button>
+                class="hidden mt-4 text-gray-400 hover:text-white underline text-sm cursor-pointer shrink-0">Sozlamalarni
+                o'zgartirish</button>
         </div>
 
         <footer
             class="w-full bg-slate-950/50 border-t border-slate-800 py-4 shrink-0 flex flex-col items-center justify-center mt-auto">
             <div class="flex flex-row items-center justify-center gap-6 sm:gap-10">
-                <a href="https://t.me/icoderuzb" target="_blank" rel="noopener noreferrer"
-                    class="flex items-center gap-2 hover:text-blue-400 transition-colors text-sm sm:text-base font-bold text-slate-400"><svg
-                        class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
+                <a href="https://t.me/icoderuzb" target="_blank"
+                    class="flex items-center gap-2 hover:text-blue-400 transition-colors text-sm font-bold text-slate-400"><svg
+                        class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path
                             d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" />
-                    </svg><span class="hidden sm:inline">Telegram</span></a>
-                <a href="https://instagram.com/icoderuzb" target="_blank" rel="noopener noreferrer"
-                    class="flex items-center gap-2 hover:text-pink-500 transition-colors text-sm sm:text-base font-bold text-slate-400"><svg
-                        class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
+                    </svg>Telegram</a>
+                <a href="https://instagram.com/icoderuzb" target="_blank"
+                    class="flex items-center gap-2 hover:text-pink-500 transition-colors text-sm font-bold text-slate-400"><svg
+                        class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path
                             d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.88z" />
-                    </svg><span class="hidden sm:inline">Instagram</span></a>
-                <a href="https://github.com/icoderuzb" target="_blank" rel="noopener noreferrer"
-                    class="flex items-center gap-2 hover:text-white transition-colors text-sm sm:text-base font-bold text-slate-400"><svg
-                        class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
+                    </svg>Instagram</a>
+                <a href="https://github.com/icoderuzb" target="_blank"
+                    class="flex items-center gap-2 hover:text-white transition-colors text-sm font-bold text-slate-400"><svg
+                        class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path
                             d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.332-5.467-5.93 0-1.31.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                    </svg><span class="hidden sm:inline">GitHub</span></a>
+                    </svg>GitHub</a>
             </div>
-            <p class="text-xs text-slate-500 mt-2">&copy; 2026 So'zlar Hujumi O'yini. Barcha huquqlar himoyalangan.</p>
         </footer>
     </div>
 
     <div id="nameModal"
         class="hidden absolute inset-0 bg-slate-950/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300 opacity-0">
-        <div class="bg-slate-800 border border-slate-600 rounded-2xl p-6 sm:p-8 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300"
+        <div class="bg-slate-800 border border-slate-600 rounded-2xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300"
             id="nameModalContent">
-            <h3 class="text-2xl font-bold text-white mb-4 text-center tracking-wider">Ismingizni kiriting</h3>
+            <h3 class="text-xl font-bold text-white mb-4 text-center tracking-wider">Ismingizni kiriting</h3>
             <input type="text" id="newNameInput"
-                class="w-full bg-slate-900 border border-slate-500 text-white rounded-xl px-4 py-3 mb-6 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all text-center text-lg font-bold"
-                placeholder="O'yinchi ismi" maxlength="20">
+                class="w-full bg-slate-900 border border-slate-500 text-white rounded-xl px-4 py-3 mb-6 focus:outline-none focus:border-blue-500 text-center text-lg font-bold"
+                maxlength="20">
             <div class="flex gap-4">
                 <button onclick="closeNameModal()"
-                    class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-colors">Bekor</button>
+                    class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl cursor-pointer">Bekor</button>
                 <button onclick="saveNameFromModal()"
-                    class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-blue-500/30">Saqlash</button>
+                    class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg cursor-pointer">Saqlash</button>
             </div>
         </div>
     </div>
 
     <div id="clearStatsModal"
         class="hidden absolute inset-0 bg-slate-950/90 z-[70] flex items-center justify-center p-4 backdrop-blur-md transition-opacity duration-300 opacity-0">
-        <div class="bg-slate-900 border border-red-500/50 rounded-3xl p-6 sm:p-8 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300"
+        <div class="bg-slate-900 border border-red-500/50 rounded-3xl p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300"
             id="clearStatsModalContent">
             <div class="text-red-500 text-5xl mb-4 text-center">⚠️</div>
-            <h3 class="text-2xl font-bold text-white mb-2 text-center tracking-wider">Diqqat!</h3>
-            <p class="text-slate-400 text-center text-sm mb-8">Rostdan ham barcha statistika va rekordlarni
-                o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.</p>
+            <h3 class="text-xl font-bold text-white mb-2 text-center tracking-wider">Diqqat!</h3>
+            <p class="text-slate-400 text-center text-sm mb-6">Barcha statistika va rekordlarni o'chirmoqchimisiz?</p>
             <div class="flex gap-4">
                 <button onclick="closeClearStatsModal()"
-                    class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-colors">Yo'q,
-                    qaytish</button>
+                    class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl cursor-pointer">Yo'q</button>
                 <button onclick="confirmClearStats()"
-                    class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-red-500/30">Ha,
+                    class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl shadow-lg cursor-pointer">Ha,
                     o'chirish</button>
             </div>
         </div>
@@ -280,285 +360,425 @@
 
     <div id="overallStatsModal"
         class="hidden absolute inset-0 bg-slate-950/95 z-50 flex-col items-center justify-start p-4 custom-scrollbar overflow-y-auto backdrop-blur-xl">
-        <h2 class="text-3xl sm:text-5xl font-black text-white mb-2 tracking-widest text-center mt-8">🏆 SIZNING
-            STATISTIKANGIZ</h2>
-        <p class="text-slate-400 mb-8 text-center text-sm sm:text-base">Kibersurfer: <span id="modalPlayerName"
+        <h2 class="text-3xl sm:text-4xl font-black text-white mb-2 tracking-widest text-center mt-8">🏆 STATISTIKA</h2>
+        <p class="text-slate-400 mb-8 text-center text-sm">O'yinchi: <span id="modalPlayerName"
                 class="font-bold text-blue-400">ICODERUZB</span></p>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-6xl shrink-0">
-            <div class="bg-slate-900 border-t-4 border-green-500 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 opacity-10 text-9xl">🎈</div>
-                <h3 class="text-2xl font-bold text-green-400 mb-6 text-center tracking-widest">OSON</h3>
-                <div class="space-y-4 text-sm sm:text-lg">
-                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
-                            yuqori hisob:</span> <span id="stScoreEasy" class="font-black text-white">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
-                            yaxshi WPM:</span> <span id="stWPMEasy" class="font-black text-blue-300">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-2"><span
-                            class="text-slate-400">O'yinlar soni:</span> <span id="stGamesEasy"
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-5xl shrink-0">
+            <div class="bg-slate-900 border-t-4 border-green-500 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+                <h3 class="text-xl font-bold text-green-400 mb-4 text-center tracking-widest">OSON</h3>
+                <div class="space-y-3 text-sm sm:text-base">
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span
+                            class="text-slate-400">Rekord:</span> <span id="stScoreEasy"
+                            class="font-black text-white">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span class="text-slate-400">Max
+                            WPM:</span> <span id="stWPMEasy" class="font-black text-blue-300">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span
+                            class="text-slate-400">O'yinlar:</span> <span id="stGamesEasy"
                             class="font-bold text-white">0</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Yozilgan so'zlar:</span> <span
+                    <div class="flex justify-between"><span class="text-slate-400">So'zlar:</span> <span
                             id="stWordsEasy" class="font-bold text-yellow-400">0</span></div>
                 </div>
             </div>
             <div
-                class="bg-slate-900 border-t-4 border-blue-500 rounded-2xl p-6 shadow-2xl relative overflow-hidden lg:scale-105 z-10 border-b border-l border-r border-slate-700">
-                <div class="absolute top-0 right-0 opacity-10 text-9xl">⚔️</div>
-                <h3 class="text-2xl font-bold text-blue-400 mb-6 text-center tracking-widest">O'RTACHA</h3>
-                <div class="space-y-4 text-sm sm:text-lg">
-                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
-                            yuqori hisob:</span> <span id="stScoreMedium" class="font-black text-white">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
-                            yaxshi WPM:</span> <span id="stWPMMedium" class="font-black text-blue-300">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-2"><span
-                            class="text-slate-400">O'yinlar soni:</span> <span id="stGamesMedium"
+                class="bg-slate-900 border-t-4 border-blue-500 rounded-2xl p-5 shadow-2xl relative overflow-hidden lg:scale-105 z-10 border-b border-l border-r border-slate-700">
+                <h3 class="text-xl font-bold text-blue-400 mb-4 text-center tracking-widest">O'RTACHA</h3>
+                <div class="space-y-3 text-sm sm:text-base">
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span
+                            class="text-slate-400">Rekord:</span> <span id="stScoreMedium"
+                            class="font-black text-white">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span class="text-slate-400">Max
+                            WPM:</span> <span id="stWPMMedium" class="font-black text-blue-300">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span
+                            class="text-slate-400">O'yinlar:</span> <span id="stGamesMedium"
                             class="font-bold text-white">0</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Yozilgan so'zlar:</span> <span
+                    <div class="flex justify-between"><span class="text-slate-400">So'zlar:</span> <span
                             id="stWordsMedium" class="font-bold text-yellow-400">0</span></div>
                 </div>
             </div>
-            <div class="bg-slate-900 border-t-4 border-red-500 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 opacity-10 text-9xl">🔥</div>
-                <h3 class="text-2xl font-bold text-red-400 mb-6 text-center tracking-widest">QIYIN</h3>
-                <div class="space-y-4 text-sm sm:text-lg">
-                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
-                            yuqori hisob:</span> <span id="stScoreHard" class="font-black text-white">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Eng
-                            yaxshi WPM:</span> <span id="stWPMHard" class="font-black text-blue-300">0</span></div>
-                    <div class="flex justify-between border-b border-slate-700 pb-2"><span
-                            class="text-slate-400">O'yinlar soni:</span> <span id="stGamesHard"
+            <div class="bg-slate-900 border-t-4 border-red-500 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+                <h3 class="text-xl font-bold text-red-400 mb-4 text-center tracking-widest">QIYIN</h3>
+                <div class="space-y-3 text-sm sm:text-base">
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span
+                            class="text-slate-400">Rekord:</span> <span id="stScoreHard"
+                            class="font-black text-white">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span class="text-slate-400">Max
+                            WPM:</span> <span id="stWPMHard" class="font-black text-blue-300">0</span></div>
+                    <div class="flex justify-between border-b border-slate-700 pb-1"><span
+                            class="text-slate-400">O'yinlar:</span> <span id="stGamesHard"
                             class="font-bold text-white">0</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Yozilgan so'zlar:</span> <span
+                    <div class="flex justify-between"><span class="text-slate-400">So'zlar:</span> <span
                             id="stWordsHard" class="font-bold text-yellow-400">0</span></div>
                 </div>
             </div>
         </div>
-
-        <div class="flex flex-col sm:flex-row gap-4 mt-10 mb-8 shrink-0 w-full max-w-xl px-4 justify-center">
+        <div class="flex flex-col sm:flex-row gap-4 mt-8 mb-8 shrink-0 w-full max-w-xl px-4 justify-center">
             <button onclick="openClearStatsModal()"
-                class="bg-red-600/20 hover:bg-red-600/40 border border-red-500/50 px-6 py-3 rounded-xl text-red-400 hover:text-white font-bold tracking-wider transition cursor-pointer shadow-lg w-full sm:w-auto">
-                🗑️ TOZALASH
-            </button>
+                class="bg-red-600/20 hover:bg-red-600/40 border border-red-500/50 px-6 py-3 rounded-xl text-red-400 hover:text-white font-bold tracking-wider transition cursor-pointer shadow-lg w-full sm:w-auto">🗑️
+                TOZALASH</button>
             <button onclick="closeOverallStats()"
-                class="bg-slate-700 hover:bg-slate-600 px-8 py-3 rounded-xl text-white font-bold tracking-widest transition cursor-pointer shadow-lg w-full sm:w-auto">
-                ORTGA QAYTISH
-            </button>
+                class="bg-slate-700 hover:bg-slate-600 px-8 py-3 rounded-xl text-white font-bold tracking-widest transition cursor-pointer shadow-lg w-full sm:w-auto">ORTGA
+                QAYTISH</button>
         </div>
     </div>
 
     <input type="text" id="mobileInput" class="absolute top-0 left-0 opacity-0 w-0 h-0" autocomplete="off"
         autocorrect="off" autocapitalize="off" spellcheck="false">
-
     <div id="labelsContainer" class="absolute inset-0 pointer-events-none z-0"></div>
 
     <script>
+        // DOM ELEMENTS VA XAVFSIZLIK
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        let bgmOscillator = null; let bgmGain = null;
 
-        // // O'ng tugmani bloklash
-        // document.addEventListener('contextmenu', event => event.preventDefault());
-
-        // // F12 va Ctrl+Shift+I (Dasturchi asboblari) ni bloklash
-        // document.onkeydown = function (e) {
-        //     if (e.keyCode == 123) { // F12
-        //         return false;
-        //     }
-        //     if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { // Ctrl+Shift+I
-        //         return false;
-        //     }
-        //     if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { // Ctrl+Shift+C
-        //         return false;
-        //     }
-        //     if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { // Ctrl+Shift+J
-        //         return false;
-        //     }
-        //     if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { // Ctrl+U (Manba kodni ko'rish)
-        //         return false;
-        //     }
-        // }
         const overlay = document.getElementById('overlay'); const mainTitle = document.getElementById('mainTitle'); const settingsBlock = document.getElementById('settingsBlock'); const currentStatsBlock = document.getElementById('currentStatsBlock'); const startBtn = document.getElementById('startBtn'); const backToSettingsBtn = document.getElementById('backToSettingsBtn'); const mobileInput = document.getElementById('mobileInput'); const profileHeader = document.getElementById('profileHeader');
-        const playerNameDisplay = document.getElementById('playerNameDisplay'); const modalPlayerName = document.getElementById('modalPlayerName'); const overallStatsModal = document.getElementById('overallStatsModal');
+        const playerNameDisplay = document.getElementById('playerNameDisplay'); const modalPlayerName = document.getElementById('modalPlayerName'); const rankDisplay = document.getElementById('rankDisplay'); const overallStatsModal = document.getElementById('overallStatsModal');
         const nameModal = document.getElementById('nameModal'); const newNameInput = document.getElementById('newNameInput'); const nameModalContent = document.getElementById('nameModalContent');
         const clearStatsModal = document.getElementById('clearStatsModal'); const clearStatsModalContent = document.getElementById('clearStatsModalContent');
+        const pauseOverlay = document.getElementById('pauseOverlay'); const pauseBtn = document.getElementById('pauseBtn');
         const statWPM = document.getElementById('statWPM'); const statAcc = document.getElementById('statAcc'); const statWords = document.getElementById('statWords'); const statLevel = document.getElementById('statLevel');
-        const scoreDisplay = document.getElementById('scoreDisplay'); const levelDisplay = document.getElementById('levelDisplay'); const recordDisplay = document.getElementById('recordDisplay'); const diffDisplayTop = document.getElementById('diffDisplayTop'); const diffDesc = document.getElementById('diffDesc'); const labelsContainer = document.getElementById('labelsContainer'); const flashOverlay = document.getElementById('flashOverlay');
-        const comboContainer = document.getElementById('comboContainer'); const comboDisplay = document.getElementById('comboDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay'); const levelDisplay = document.getElementById('levelDisplay'); const recordDisplay = document.getElementById('recordDisplay'); const diffDisplayTop = document.getElementById('diffDisplayTop'); const langDisplayTop = document.getElementById('langDisplayTop'); const diffDesc = document.getElementById('diffDesc'); const labelsContainer = document.getElementById('labelsContainer'); const flashOverlay = document.getElementById('flashOverlay');
+        const comboContainer = document.getElementById('comboContainer'); const comboDisplay = document.getElementById('comboDisplay'); const comboProgress = document.getElementById('comboProgress');
+        const healthDisplay = document.getElementById('healthDisplay'); const statTime = document.getElementById('statTime'); const statCombo = document.getElementById('statCombo'); const muteBtn = document.getElementById('muteBtn'); const nukeOverlay = document.getElementById('nukeOverlay');
 
-        // LUG'ATLAR
-        const lvl1Words = ["olma", "suv", "gul", "bol", "non", "kuz", "yoz", "uy", "tom", "ona", "uka", "opa", "kuch", "qand", "qish", "kema", "fil", "sher", "qo'y", "tog'", "bog'", "qiz", "xat", "choy", "sir", "til", "yuz", "ko'z", "zar", "dam", "yil", "oy", "kun", "so'z", "dunyo", "yo'l", "sham", "qush", "baliq", "yomg'ir", "tosh", "yaproq"];
-        const lvl2Words = ["bahor", "kitob", "qalam", "anjir", "xurmo", "shahar", "osmon", "bulut", "yigit", "daryo", "vatan", "tuya", "paxta", "havo", "dars", "olcha", "piyoz", "sabzi", "bodom", "hayot", "soat", "o'g'il", "to'y", "qizil", "ko'k", "sariq", "oq", "qora", "yashil", "pushti", "moviy", "binafsha", "kumush", "oltin", "temir", "shisha", "plastik", "qog'oz", "taxta", "mashina", "avtobus", "velosiped", "telefon", "kompyuter", "televizor", "radio", "kamera", "sochiq", "yostiq", "ko'rpa"];
-        const lvl3Words = ["quyosh", "choynak", "o'rtoq", "daftar", "maktab", "daraxt", "bayram", "yulduz", "chiroq", "mehmon", "yomg'ir", "yaproq", "shirin", "tuman", "doston", "baraka", "bayroq", "quvnoq", "pichoq", "qo'shiq", "suvsizlik", "qorong'u", "yashil", "ko'prik", "tosh", "shamol", "qayiq"];
-        const lvl4Words = ["toshbaqa", "kelajak", "imtihon", "samolyot", "kamalak", "kapalak", "darslik", "tarbiya", "poytaxt", "sadoqat", "diyonat", "tabiat", "jasorat", "g'alaba", "orzu", "do'stlik", "sabr-toqat", "mehribonlik", "yaxshilik", "yurtsevar", "muhabbat", "sog'liq", "farzand", "oqibat", "afsus", "hayajon"];
-        const lvl5Words = ["muvaffaqiyat", "texnologiya", "respublika", "universitet", "mustaqillik", "o'qituvchi", "sarguzasht", "vatanparvar", "tadbirkorlik", "konstitutsiya", "g'urur", "farovonlik", "yuksalish", "ijtimoiy", "madaniyat", "tarix", "ilm-fan"];
-        const bossWords = ["KIBERXAVFSIZLIK", "ENSIKLOPEDIYA", "QAHRAMONLIK", "INFRATUZILMA", "KOSMONAVTIKA", "LABORATORIYA", "ARXITEKTURA", "ASTRONOMIYA", "INFORMATIKA", "ELEKTRONIKA", "MATEMATIKA", "FIZIKA", "KIMYO", "BIOLOGIYA", "PSIXOLOGIYA", "SAN'ATKORLIK"];
+        // DICTIONARIES (TILLAR)
+        const dictUZ = {
+            lvl1: ["olma", "suv", "gul", "bol", "non", "kuz", "yoz", "uy", "tom", "ona", "uka", "opa", "kuch", "qand", "qish", "kema", "fil", "sher", "qo'y", "tog'", "bog'", "qiz", "xat", "choy", "sir", "til", "yuz", "ko'z", "zar", "dam", "yil", "oy", "kun", "so'z", "dunyo", "yo'l", "sham", "qush", "baliq"],
+            lvl2: ["bahor", "kitob", "qalam", "anjir", "xurmo", "shahar", "osmon", "bulut", "yigit", "daryo", "vatan", "tuya", "paxta", "havo", "dars", "olcha", "piyoz", "sabzi", "bodom", "hayot", "soat", "o'g'il", "to'y", "qizil", "yashil", "telefon"],
+            lvl3: ["quyosh", "choynak", "o'rtoq", "daftar", "maktab", "daraxt", "bayram", "yulduz", "chiroq", "mehmon", "yomg'ir", "yaproq", "shirin", "tuman", "baraka", "bayroq", "quvnoq", "pichoq", "qo'shiq"],
+            lvl4: ["toshbaqa", "kelajak", "imtihon", "samolyot", "kamalak", "kapalak", "darslik", "tarbiya", "poytaxt", "sadoqat", "diyonat", "tabiat", "jasorat", "g'alaba", "orzu", "do'stlik", "muhabbat"],
+            lvl5: ["muvaffaqiyat", "texnologiya", "respublika", "universitet", "mustaqillik", "o'qituvchi", "sarguzasht", "vatanparvar", "tadbirkorlik", "konstitutsiya", "farovonlik"],
+            boss: ["KIBERXAVFSIZLIK", "ENSIKLOPEDIYA", "QAHRAMONLIK", "INFRATUZILMA", "KOSMONAVTIKA", "LABORATORIYA", "ARXITEKTURA", "ASTRONOMIYA"]
+        };
 
-        // PROFIL VA STATISTIKA
-        let userProfile = JSON.parse(localStorage.getItem('typingGameProfile_v3')) || {
-            playerName: "ICODERUZB", lastDifficulty: 'medium',
-            stats: {
-                easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 },
-                medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 },
-                hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }
-            }
+        const dictEN = {
+            lvl1: ["cat", "dog", "sun", "sky", "pen", "cup", "car", "red", "sea", "tree", "bird", "book", "hand", "star", "moon", "fire", "ice", "snow", "rain", "wind"],
+            lvl2: ["river", "cloud", "paper", "phone", "green", "light", "world", "space", "water", "glass", "house", "table", "chair", "mouse", "apple", "bread"],
+            lvl3: ["galaxy", "planet", "rocket", "oxygen", "forest", "animal", "window", "school", "market", "system", "nature", "family", "friend", "flower"],
+            lvl4: ["universe", "astronaut", "satellite", "computer", "internet", "butterfly", "education", "mountain", "beautiful", "adventure", "knowledge"],
+            lvl5: ["technology", "intelligence", "environment", "development", "exploration", "constitution", "imagination", "performance"],
+            boss: ["CYBERSECURITY", "EXTRATERRESTRIAL", "REVOLUTIONARY", "COMPREHENSIVE", "ARCHITECTURE", "PHILOSOPHICAL"]
+        };
+
+        const dictRU = {
+            lvl1: ["кот", "дом", "лес", "сок", "мир", "лед", "чай", "сыр", "век", "год", "час", "шаг", "снег", "звук", "свет", "тень", "ночь", "день", "утро"],
+            lvl2: ["река", "небо", "вода", "море", "гора", "птица", "рыба", "земля", "осень", "весна", "книга", "ручка", "окно", "стол", "зима", "лето"],
+            lvl3: ["планета", "ракета", "космос", "дерево", "солнце", "звезда", "облако", "машина", "природа", "цветок", "музыка", "дружба"],
+            lvl4: ["вселенная", "астронавт", "спутник", "компьютер", "интернет", "искусство", "литература", "галактика", "богатство", "здоровье"],
+            lvl5: ["технология", "исследование", "конституция", "цивилизация", "человечество", "пространство", "университет"],
+            boss: ["КИБЕРБЕЗОПАСНОСТЬ", "ИНФРАСТРУКТУРА", "ЭЛЕКТРОНИКА", "АРХИТЕКТУРА", "СОВЕРШЕНСТВОВАНИЕ", "ЭЛЕКТРИФИКАЦИЯ"]
+        };
+
+        const dictKR = {
+            lvl1: ["олма", "сув", "гул", "бол", "нон", "куз", "ёз", "уй", "том", "она", "ука", "опа", "куч", "қанд", "қиш", "кема", "фил", "шер", "қўй", "тоғ", "боғ", "қиз", "хат", "чой", "сир", "тил", "юз", "кўз", "зар", "дам", "йил", "ой", "кун", "сўз", "дунё", "йўл", "шам", "қуш", "балиқ"],
+            lvl2: ["баҳор", "китоб", "қалам", "анжир", "хурмо", "шаҳар", "осмон", "булут", "йигит", "дарё", "ватан", "туя", "пахта", "ҳаво", "дарс", "олча", "пиёз", "сабзи", "бодом", "ҳаёт", "соат", "ўғил", "тўй", "қизил", "яшил", "телефон"],
+            lvl3: ["қуёш", "чойнак", "ўртоқ", "дафтар", "мактаб", "дарахт", "байрам", "юлдуз", "чироқ", "меҳмон", "ёмғир", "япроқ", "ширин", "туман", "барака", "байроқ", "қувноқ", "пичоқ", "қўшиқ"],
+            lvl4: ["тошбақа", "келажак", "имтиҳон", "самолёт", "камалак", "капалак", "дарслик", "тарбия", "пойтахт", "садоқат", "диёнат", "табиат", "жасорат", "ғалаба", "орзу", "дўстлик", "муҳаббат"],
+            lvl5: ["муваффақият", "технология", "республика", "университет", "мустақиллик", "ўқитувчи", "саргузашт", "ватанпарвар", "тадбиркорлик", "конституция", "фаровонлик"],
+            boss: ["КИБЕРХАВФСИЗЛИК", "ЭНЦИКЛОПЕДИЯ", "ҚАҲРАМОНЛИК", "ИНФРАТУЗИЛМА", "КОСМОНАВТИКА", "ЛАБОРАТОРИЯ", "АРХИТЕКТУРА", "АСТРОНОМИЯ"]
+        };
+
+        // PROFILE & SETTINGS
+        let userProfile = JSON.parse(localStorage.getItem('typingGameProfile_v5')) || {
+            playerName: "ICODERUZB", lastDifficulty: 'medium', lastLanguage: 'uz', isMuted: false,
+            stats: { easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }, medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }, hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 } }
         };
 
         playerNameDisplay.innerText = userProfile.playerName; modalPlayerName.innerText = userProfile.playerName;
+        let isMuted = userProfile.isMuted; muteBtn.innerText = isMuted ? "🔇" : "🔊";
 
-        const difficultySettings = {
+        const diffSettings = {
             easy: { speedBase: 0.04, spawnRate: 2500, label: 'Oson', desc: "Sekin tezlik va katta tanaffus." },
             medium: { speedBase: 0.08, spawnRate: 1500, label: "O'rtacha", desc: "Standart o'yin tezligi." },
             hard: { speedBase: 0.12, spawnRate: 1000, label: 'Qiyin', desc: "Juda tez. Professional yozuvchilar uchun!" }
         };
 
-        let currentDiff = userProfile.lastDifficulty; let baseSpeed = difficultySettings[currentDiff].speedBase; let baseSpawnRate = difficultySettings[currentDiff].spawnRate;
+        let currentDiff = userProfile.lastDifficulty;
+        let currentLang = userProfile.lastLanguage || 'uz';
+        let baseSpeed = diffSettings[currentDiff].speedBase;
+        let baseSpawnRate = diffSettings[currentDiff].spawnRate;
+
         document.getElementById('diff' + currentDiff.charAt(0).toUpperCase() + currentDiff.slice(1)).checked = true;
-        diffDesc.innerText = difficultySettings[currentDiff].desc; recordDisplay.innerText = userProfile.stats[currentDiff].highScore; diffDisplayTop.innerText = difficultySettings[currentDiff].label;
+        document.getElementById('lang' + currentLang.charAt(0).toUpperCase() + currentLang.slice(1)).checked = true;
+        diffDesc.innerText = diffSettings[currentDiff].desc;
 
-        function saveProfile() { localStorage.setItem('typingGameProfile_v3', JSON.stringify(userProfile)); }
+        function updateUIHeaders() {
+            if (recordDisplay) recordDisplay.innerText = userProfile.stats[currentDiff].highScore;
+            if (diffDisplayTop) diffDisplayTop.innerText = diffSettings[currentDiff].label;
+            if (langDisplayTop) langDisplayTop.innerText = currentLang.toUpperCase();
+            if (rankDisplay) rankDisplay.innerText = getRank(userProfile.stats[currentDiff].highScore);
+        }
+        updateUIHeaders();
 
+        function getRank(score) {
+            if (score < 1000) return "Boshlovchi 🥉";
+            if (score < 3000) return "Kosmik Surfer 🥈";
+            if (score < 6000) return "Klaviatura Ritsari 🥇";
+            if (score < 10000) return "Kiber Qahramon 💎";
+            return "Afsona 👑";
+        }
+
+        function saveProfile() { localStorage.setItem('typingGameProfile_v5', JSON.stringify(userProfile)); }
+
+        // Modals
         function openNameModal() { newNameInput.value = userProfile.playerName; nameModal.classList.remove('hidden'); setTimeout(() => { nameModal.classList.remove('opacity-0'); nameModalContent.classList.remove('scale-95'); nameModalContent.classList.add('scale-100'); newNameInput.focus(); }, 10); }
         function closeNameModal() { nameModal.classList.add('opacity-0'); nameModalContent.classList.remove('scale-100'); nameModalContent.classList.add('scale-95'); setTimeout(() => { nameModal.classList.add('hidden'); mobileInput.focus(); }, 300); }
         function saveNameFromModal() { let newName = newNameInput.value; if (newName && newName.trim() !== "") { userProfile.playerName = newName.trim().substring(0, 20); playerNameDisplay.innerText = userProfile.playerName; modalPlayerName.innerText = userProfile.playerName; saveProfile(); } closeNameModal(); }
         newNameInput.addEventListener('keypress', function (e) { if (e.key === 'Enter') saveNameFromModal(); });
 
-        // --- STATISTIKANI TOZALASH MODALI FUNKSIYALARI ---
-        function openClearStatsModal() {
-            clearStatsModal.classList.remove('hidden');
-            setTimeout(() => {
-                clearStatsModal.classList.remove('opacity-0');
-                clearStatsModalContent.classList.remove('scale-95');
-                clearStatsModalContent.classList.add('scale-100');
-            }, 10);
-        }
+        function openClearStatsModal() { clearStatsModal.classList.remove('hidden'); setTimeout(() => { clearStatsModal.classList.remove('opacity-0'); clearStatsModalContent.classList.remove('scale-95'); clearStatsModalContent.classList.add('scale-100'); }, 10); }
+        function closeClearStatsModal() { clearStatsModal.classList.add('opacity-0'); clearStatsModalContent.classList.remove('scale-100'); clearStatsModalContent.classList.add('scale-95'); setTimeout(() => { clearStatsModal.classList.add('hidden'); }, 300); }
+        function confirmClearStats() { userProfile.stats = { easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }, medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }, hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 } }; saveProfile(); showOverallStats(); updateUIHeaders(); closeClearStatsModal(); }
 
-        function closeClearStatsModal() {
-            clearStatsModal.classList.add('opacity-0');
-            clearStatsModalContent.classList.remove('scale-100');
-            clearStatsModalContent.classList.add('scale-95');
-            setTimeout(() => {
-                clearStatsModal.classList.add('hidden');
-            }, 300);
-        }
-
-        function confirmClearStats() {
-            // Faqat stats ob'ektini nollaymiz (ism qoladi)
-            userProfile.stats = {
-                easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 },
-                medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 },
-                hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }
-            };
-            saveProfile();
-
-            // Ekranni yangilaymiz
-            showOverallStats();
-            recordDisplay.innerText = userProfile.stats[currentDiff].highScore;
-
-            closeClearStatsModal();
-        }
-        // ---------------------------------------------------
-
-        function changeDifficulty(diff) {
-            currentDiff = diff; baseSpeed = difficultySettings[diff].speedBase; baseSpawnRate = difficultySettings[diff].spawnRate; diffDesc.innerText = difficultySettings[diff].desc; userProfile.lastDifficulty = diff; saveProfile(); recordDisplay.innerText = userProfile.stats[diff].highScore; diffDisplayTop.innerText = difficultySettings[diff].label;
-        }
+        function changeDifficulty(diff) { currentDiff = diff; baseSpeed = diffSettings[diff].speedBase; baseSpawnRate = diffSettings[diff].spawnRate; diffDesc.innerText = diffSettings[diff].desc; userProfile.lastDifficulty = diff; saveProfile(); updateUIHeaders(); }
+        function changeLanguage(lang) { currentLang = lang; userProfile.lastLanguage = lang; saveProfile(); updateUIHeaders(); }
 
         function showSettings() {
             currentStatsBlock.classList.add('hidden'); backToSettingsBtn.classList.add('hidden'); settingsBlock.classList.remove('hidden');
-            mainTitle.innerText = "SO'ZLAR HUJUMI"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 drop-shadow-2xl mb-6 text-center leading-normal py-2"; startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">O'YINNI BOSHLASH</span><span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>`;
+            mainTitle.innerText = "SO'Z HUJUMI"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 drop-shadow-2xl mb-4 text-center leading-normal py-2"; startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">O'YINNI BOSHLASH</span><span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>`;
         }
 
         function showOverallStats() {
             ['easy', 'medium', 'hard'].forEach(diff => { const Diff = diff.charAt(0).toUpperCase() + diff.slice(1); document.getElementById('stScore' + Diff).innerText = userProfile.stats[diff].highScore; document.getElementById('stWPM' + Diff).innerText = userProfile.stats[diff].bestWPM; document.getElementById('stGames' + Diff).innerText = userProfile.stats[diff].gamesPlayed; document.getElementById('stWords' + Diff).innerText = userProfile.stats[diff].wordsTyped; });
             overlay.classList.add('hidden'); overallStatsModal.classList.remove('hidden'); overallStatsModal.classList.add('flex');
         }
-
         function closeOverallStats() { overallStatsModal.classList.add('hidden'); overallStatsModal.classList.remove('flex'); overlay.classList.remove('hidden'); }
 
-        // O'YIN MANTIG'I
-        let gameActive = false; let score = 0; let level = 1; let speed = 0;
-        let activeWords = []; let targetedWord = null; let wordsSpawnedCount = 0; let lastSpawnTime = 0;
-        let totalWordsTyped = 0; let correctStrokes = 0; let totalStrokes = 0; let gameStartTime = 0;
-        let comboMultiplier = 1; let comboCount = 0;
+        // AUDIO FUNKSIYALAR
+        function toggleMute() {
+            isMuted = !isMuted; userProfile.isMuted = isMuted; saveProfile(); muteBtn.innerText = isMuted ? "🔇" : "🔊";
+            if (isMuted && bgmGain) { bgmGain.gain.setTargetAtTime(0.001, audioCtx.currentTime, 0.1); }
+            else if (!isMuted && bgmGain && gameActive) { bgmGain.gain.setTargetAtTime(0.02, audioCtx.currentTime, 0.1); }
+            mobileInput.focus();
+        }
 
-        const AudioContext = window.AudioContext || window.webkitAudioContext; const audioCtx = new AudioContext();
+        function startBGM() {
+            if (bgmOscillator) return;
+            bgmOscillator = audioCtx.createOscillator(); bgmGain = audioCtx.createGain();
+            bgmOscillator.type = 'sine';
+            bgmOscillator.frequency.value = 120;
+            bgmGain.gain.value = isMuted ? 0 : 0.02;
+            bgmOscillator.connect(bgmGain); bgmGain.connect(audioCtx.destination);
+            bgmOscillator.start();
+        }
 
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') return; const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain(); osc.connect(gainNode); gainNode.connect(audioCtx.destination);
-            if (type === 'type') { osc.type = 'sine'; osc.frequency.setValueAtTime(800 + (Math.random() * 200), audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.05); gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05); osc.start(); osc.stop(audioCtx.currentTime + 0.05); }
-            else if (type === 'destroy') { osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.2); gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2); osc.start(); osc.stop(audioCtx.currentTime + 0.2); }
-            else if (type === 'boss_spawn') { osc.type = 'square'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 1.0); gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0); osc.start(); osc.stop(audioCtx.currentTime + 1.0); }
+        function stopBGM() {
+            if (bgmOscillator) { bgmGain.gain.setTargetAtTime(0.001, audioCtx.currentTime, 0.5); setTimeout(() => { if (bgmOscillator) { bgmOscillator.stop(); bgmOscillator = null; } }, 600); }
+        }
+
+        function playSound(type, pitch = 0) {
+            if (isMuted || audioCtx.state === 'suspended') return;
+            const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+
+            if (type === 'type') {
+                osc.type = 'sine'; let freq = 600 + (pitch * 80);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + 0.05);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            }
+            else if (type === 'destroy') { osc.type = 'triangle'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.15); gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); osc.start(); osc.stop(audioCtx.currentTime + 0.15); }
+            else if (type === 'boss_die') { osc.type = 'square'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.5); gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5); osc.start(); osc.stop(audioCtx.currentTime + 0.5); }
+            else if (type === 'nuke') { osc.type = 'square'; osc.frequency.setValueAtTime(50, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.0); gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0); osc.start(); osc.stop(audioCtx.currentTime + 1.0); }
+            else if (type === 'boss_spawn') { osc.type = 'square'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 1.0); gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0); osc.start(); osc.stop(audioCtx.currentTime + 1.0); }
             else if (type === 'error') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); osc.start(); osc.stop(audioCtx.currentTime + 0.15); }
+            else if (type === 'damage') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.4); gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); osc.start(); osc.stop(audioCtx.currentTime + 0.4); }
             else if (type === 'victory') { osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.2); osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.4); osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.6); gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5); osc.start(); osc.stop(audioCtx.currentTime + 1.5); }
         }
 
-        const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
+        // THREE.JS SETUP
+        const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x050814, 0.015);
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100); camera.position.set(0, 2, 8);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(window.innerWidth, window.innerHeight); document.body.insertBefore(renderer.domElement, labelsContainer);
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); scene.add(ambientLight);
         const gridHelper = new THREE.GridHelper(200, 100, 0x4ade80, 0x1e293b); gridHelper.position.y = -2; scene.add(gridHelper);
-        const boxGeo = new THREE.BoxGeometry(3, 1, 1);
-        const normalMat = new THREE.MeshBasicMaterial({ color: 0x334155, wireframe: true }); const bossMat = new THREE.MeshBasicMaterial({ color: 0xef4444, wireframe: true });
 
-        function getFrustumBounds(z) {
-            const distance = Math.abs(camera.position.z - z); const vFov = (camera.fov * Math.PI) / 180; const height = 2 * Math.tan(vFov / 2) * distance; const width = height * camera.aspect;
-            const marginFactor = window.innerWidth < 600 ? 0.8 : 0.5;
-            return { xMin: (-width / 2) * marginFactor, xMax: (width / 2) * marginFactor, yMin: 1.5, yMax: (height / 2) * 0.6 };
-        }
+        const starsGeo = new THREE.BufferGeometry(); const starsCount = 2000; const posArray = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount * 3; i += 3) { posArray[i] = (Math.random() - 0.5) * 150; posArray[i + 1] = (Math.random() - 0.5) * 150; posArray[i + 2] = -Math.random() * 150; }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const starsMat = new THREE.PointsMaterial({ size: 0.3, color: 0xffffff, transparent: true, opacity: 0.8 }); const starMesh = new THREE.Points(starsGeo, starsMat); scene.add(starMesh);
+
+        const boxGeo = new THREE.BoxGeometry(3, 1, 1);
+        const normalMat = new THREE.MeshBasicMaterial({ color: 0x334155, wireframe: true });
+        const bossMat = new THREE.MeshBasicMaterial({ color: 0xef4444, wireframe: true });
+        const nukeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, wireframe: true });
+        const laserMatGreen = new THREE.LineBasicMaterial({ color: 0x4ade80, linewidth: 2 });
+        const laserMatRed = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 2 });
+        const particleMat = new THREE.MeshBasicMaterial({ color: 0x4ade80 });
+        const bossParticleMat = new THREE.MeshBasicMaterial({ color: 0xf87171 });
+        const trailMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+        // O'YIN O'ZGARUVCHILARI
+        let gameActive = false; let isPaused = false; let score = 0; let level = 1; let speed = 0; let health = 3;
+        let activeWords = []; let targetedWord = null; let wordsSpawnedCount = 0; let lastSpawnTime = 0;
+        let totalWordsTyped = 0; let correctStrokes = 0; let totalStrokes = 0; let gameStartTime = 0; let pauseStartTime = 0; let totalPausedTime = 0;
+        let comboMultiplier = 1; let comboWordsCount = 0; let maxComboReached = 1; let lastNukeTime = 0;
+        let particles = []; let lasers = []; let trails = []; let shakeFrames = 0; let shakeIntensity = 0;
 
         function cleanWord(str) { return str.replace(/[‘’`]/g, "'"); }
-
         function isLetterOrApostrophe(char) {
             if (!char || char.length !== 1) return false;
             if (["'", "`", "‘", "’"].includes(char)) return true;
-            return char.toLowerCase() !== char.toUpperCase();
+            return /^[a-zA-Zа-яА-ЯёЁўЎқҚғҒҳҲ]$/.test(char);
+        }
+
+        function getActiveDict() {
+            if (currentLang === 'en') return dictEN;
+            if (currentLang === 'ru') return dictRU;
+            if (currentLang === 'kr') return dictKR;
+            return dictUZ;
+        }
+
+        // EFFECT FUNCTIONS
+        function shootLaser(targetPos, isHit) {
+            const material = isHit ? laserMatGreen : laserMatRed;
+            const points = [new THREE.Vector3(0, -2, 5), targetPos.clone()];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, material); scene.add(line); lasers.push({ mesh: line, life: 10 });
+        }
+
+        function createExplosion(pos, isBoss = false) {
+            const count = isBoss ? 50 : 15;
+            const mat = isBoss ? bossParticleMat : particleMat;
+            for (let i = 0; i < count; i++) {
+                const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), mat);
+                p.position.copy(pos);
+                p.vx = (Math.random() - 0.5) * (isBoss ? 4 : 2); p.vy = (Math.random() - 0.5) * (isBoss ? 4 : 2); p.vz = (Math.random() - 0.5) * (isBoss ? 4 : 2);
+                scene.add(p); particles.push({ mesh: p, life: isBoss ? 50 : 30 });
+            }
+        }
+
+        function createTrail(pos) {
+            const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), trailMat);
+            p.position.copy(pos);
+            scene.add(p); trails.push({ mesh: p, life: 15 });
+        }
+
+        function showPerfect(x, y) {
+            const msg = document.createElement('div');
+            msg.className = 'perfect-msg'; msg.innerText = 'Perfect!';
+            msg.style.left = `${x}px`; msg.style.top = `${y}px`;
+            document.body.appendChild(msg);
+            setTimeout(() => { msg.remove(); }, 1000);
+        }
+
+        function triggerCameraShake(frames, intensity) { shakeFrames = frames; shakeIntensity = intensity; }
+
+        function updateHealth() {
+            let hStr = ""; for (let i = 0; i < 3; i++) hStr += i < health ? "❤️" : "🖤";
+            healthDisplay.innerText = hStr; if (health <= 0) gameOver();
+        }
+
+        function triggerNuke() {
+            playSound('nuke'); triggerCameraShake(50, 2.0);
+            document.getElementById('nukeOverlay').style.opacity = '0.9'; setTimeout(() => { document.getElementById('nukeOverlay').style.opacity = '0'; }, 300);
+            for (let i = activeWords.length - 1; i >= 0; i--) {
+                let w = activeWords[i]; createExplosion(w.mesh.position, w.isBoss); scene.remove(w.mesh); w.label.remove();
+                const diffMultiplier = currentDiff === 'easy' ? 1 : (currentDiff === 'medium' ? 1.5 : 2);
+                let p = w.isBoss ? w.text.length * 50 : (w.isNuke ? 500 : w.text.length * 10); score += Math.round(p * diffMultiplier * comboMultiplier);
+            }
+            activeWords = []; targetedWord = null; scoreDisplay.innerText = score; lastNukeTime = Date.now();
         }
 
         function spawnWord() {
-            if (!gameActive) return;
+            if (!gameActive || isPaused) return;
+            const dict = getActiveDict();
             const activeFirstLetters = activeWords.map(w => w.text[0].toLowerCase());
-            wordsSpawnedCount++; let isBoss = false; let text = "";
+            wordsSpawnedCount++; let isBoss = false; let isNuke = false; let text = "";
 
-            if (wordsSpawnedCount % 10 === 0) {
-                isBoss = true; let availableBosses = bossWords.filter(w => !activeFirstLetters.includes(w[0].toLowerCase())); if (availableBosses.length === 0) availableBosses = bossWords;
-                text = cleanWord(availableBosses[Math.floor(Math.random() * availableBosses.length)]); playSound('boss_spawn');
-            } else {
-                let sourceList = lvl1Words;
-                if (score < 500) { level = 1; sourceList = lvl1Words; } else if (score < 1500) { level = 2; sourceList = lvl1Words.concat(lvl2Words); } else if (score < 3000) { level = 3; sourceList = lvl2Words.concat(lvl3Words); } else if (score < 5000) { level = 4; sourceList = lvl3Words.concat(lvl4Words); } else { level = 5; sourceList = lvl4Words.concat(lvl5Words); }
-                levelDisplay.innerText = level;
-                let availableWords = sourceList.filter(w => !activeFirstLetters.includes(cleanWord(w)[0].toLowerCase())); if (availableWords.length === 0) { wordsSpawnedCount--; return; }
-                text = cleanWord(availableWords[Math.floor(Math.random() * availableWords.length)]);
+            let nukeWords = [...dict.lvl4, ...dict.lvl5].filter(w => w.length >= 9 && w.length <= 15);
+            if (level >= 2 && Date.now() - totalPausedTime - lastNukeTime >= 35000 && nukeWords.length > 0) {
+                let availableNukes = nukeWords.filter(w => !activeFirstLetters.includes(w[0].toLowerCase()));
+                if (availableNukes.length > 0) { isNuke = true; text = cleanWord(availableNukes[Math.floor(Math.random() * availableNukes.length)]); lastNukeTime = Date.now() - totalPausedTime; }
             }
 
-            const bounds = getFrustumBounds(-90); let xPos, yPos; let overlapping = true; let attempts = 0;
-            while (overlapping && attempts < 30) {
-                xPos = bounds.xMin + Math.random() * (bounds.xMax - bounds.xMin); yPos = bounds.yMin + Math.random() * (bounds.yMax - bounds.yMin);
-                if (isBoss) { xPos = 0; yPos = bounds.yMax / 2; }
-                overlapping = false;
-                for (let w of activeWords) {
-                    if (w.mesh.position.z < -60) {
-                        let distX = Math.abs(w.mesh.position.x - xPos); let distY = Math.abs(w.mesh.position.y - yPos);
-                        const xRadius = window.innerWidth < 600 ? 5 : 10;
-                        if (distX < xRadius && distY < 4) { overlapping = true; break; }
-                    }
+            if (!isNuke) {
+                if (wordsSpawnedCount % 10 === 0) {
+                    isBoss = true; let availableBosses = dict.boss.filter(w => !activeFirstLetters.includes(w[0].toLowerCase())); if (availableBosses.length === 0) availableBosses = dict.boss;
+                    text = cleanWord(availableBosses[Math.floor(Math.random() * availableBosses.length)]); playSound('boss_spawn');
+                } else {
+                    let sourceList = dict.lvl1;
+                    if (score < 500) { level = 1; sourceList = dict.lvl1; } else if (score < 1500) { level = 2; sourceList = dict.lvl1.concat(dict.lvl2); } else if (score < 3000) { level = 3; sourceList = dict.lvl2.concat(dict.lvl3); } else if (score < 5000) { level = 4; sourceList = dict.lvl3.concat(dict.lvl4); } else { level = 5; sourceList = dict.lvl4.concat(dict.lvl5); }
+                    levelDisplay.innerText = level;
+                    let availableWords = sourceList.filter(w => !activeFirstLetters.includes(cleanWord(w)[0].toLowerCase())); if (availableWords.length === 0) { wordsSpawnedCount--; return; }
+                    text = cleanWord(availableWords[Math.floor(Math.random() * availableWords.length)]);
                 }
-                attempts++;
             }
 
-            const mesh = new THREE.Mesh(boxGeo, isBoss ? bossMat.clone() : normalMat.clone()); mesh.position.set(xPos, yPos, -90); if (isBoss) mesh.scale.set(3, 3, 3); scene.add(mesh);
-            const label = document.createElement('div'); label.className = `word-label ${isBoss ? 'boss-label' : ''}`; label.innerHTML = `<span class="untyped">${text}</span>`; labelsContainer.appendChild(label);
-            activeWords.push({ text: text, typedLength: 0, mesh: mesh, label: label, isBoss: isBoss, speedMult: isBoss ? 0.4 : 1.0 });
+            let safeX = window.innerWidth < 600 ? 8 : 16;
+            let startX, startY;
+
+            if (isBoss || isNuke) {
+                startX = 0;
+                startY = 2;
+            } else {
+                let overlapping = true;
+                let attempts = 0;
+
+                while (overlapping && attempts < 50) {
+                    startX = (Math.random() - 0.5) * safeX;
+                    startY = 1 + Math.random() * 3;
+                    overlapping = false;
+
+                    for (let w of activeWords) {
+                        if (w.mesh.position.z < -60) {
+                            let distX = Math.abs(w.mesh.position.x - startX);
+                            let distY = Math.abs(w.mesh.position.y - startY);
+                            if (distX < 4.0 && distY < 1.5) {
+                                overlapping = true;
+                                break;
+                            }
+                        }
+                    }
+                    attempts++;
+                }
+            }
+
+            let dx = 0; let dy = 0; let dz = 5 - (-90);
+
+            let meshMat = normalMat.clone(); if (isBoss) meshMat = bossMat.clone(); if (isNuke) meshMat = nukeMat.clone();
+            const mesh = new THREE.Mesh(boxGeo, meshMat);
+            mesh.position.set(startX, startY, -90);
+            if (isBoss || isNuke) mesh.scale.set(3, 3, 3);
+            scene.add(mesh);
+
+            const label = document.createElement('div'); label.className = `word-label ${isBoss ? 'boss-label' : ''} ${isNuke ? 'bomb-label' : ''}`;
+            label.innerHTML = (isNuke ? `<span class="text-sm block text-yellow-300 animate-pulse tracking-widest">[BOMBA]</span>` : '') + `<span class="untyped">${text}</span>`;
+            labelsContainer.appendChild(label);
+
+            activeWords.push({ text: text, typedLength: 0, mesh: mesh, label: label, isBoss: isBoss, isNuke: isNuke, speedMult: (isBoss || isNuke) ? 0.5 : 1.0, dx: dx, dy: dy, dz: dz, startTime: Date.now(), hadError: false });
         }
 
-        function resetCombo() { comboCount = 0; comboMultiplier = 1; comboContainer.classList.add('hidden'); }
-        function increaseCombo() {
-            comboCount++;
-            if (comboCount > 5) {
-                comboMultiplier = Math.min(5, 1 + Math.floor(comboCount / 5) * 0.5);
+        function resetCombo() { comboWordsCount = 0; comboMultiplier = 1; comboContainer.classList.add('hidden'); updateComboUI(); }
+        function updateComboUI() {
+            if (comboMultiplier > 1 || comboWordsCount > 0) {
                 comboContainer.classList.remove('hidden'); comboDisplay.innerText = `x${comboMultiplier}`;
+                let progress = comboWordsCount % 10; if (comboMultiplier >= 5) progress = 10;
+                document.getElementById('comboProgress').innerText = `${progress}/10 so'z`;
+            }
+        }
+        function handleWordComplete(wObj) {
+            comboWordsCount++;
+            if (comboWordsCount % 10 === 0 && comboMultiplier < 5) {
+                comboMultiplier++;
                 comboDisplay.classList.remove('combo-pop'); void comboDisplay.offsetWidth; comboDisplay.classList.add('combo-pop');
+            }
+            if (comboMultiplier > maxComboReached) maxComboReached = comboMultiplier;
+            updateComboUI();
+
+            if (!wObj.hadError && (Date.now() - wObj.startTime) < 1500) {
+                const vector = wObj.mesh.position.clone(); vector.project(camera);
+                const px = (vector.x * 0.5 + 0.5) * window.innerWidth; const py = (vector.y * -0.5 + 0.5) * window.innerHeight;
+                showPerfect(px, py);
             }
         }
 
         function handleKeyPress(keyStr) {
-            if (!gameActive) { if (keyStr === 'Enter') startGame(); return; }
+            if (!gameActive || isPaused) { if (keyStr === 'Enter' && !isPaused) startGame(); return; }
             if (keyStr === 'Backspace' && targetedWord) {
-                targetedWord.typedLength = 0; targetedWord.mesh.material.color.setHex(targetedWord.isBoss ? 0xef4444 : 0x334155);
+                targetedWord.typedLength = 0; targetedWord.mesh.material.color.setHex(targetedWord.isNuke ? 0xfacc15 : (targetedWord.isBoss ? 0xef4444 : 0x334155));
                 updateLabel(targetedWord); targetedWord = null; playSound('error'); resetCombo(); return;
             }
             if (!isLetterOrApostrophe(keyStr)) return;
@@ -571,108 +791,138 @@
                     let firstExpectedChar = wordObj.text[0].toLowerCase();
                     if (firstExpectedChar === typedChar) { if (wordObj.mesh.position.z < closestDist) { closestDist = wordObj.mesh.position.z; closestWord = wordObj; } }
                 }
-                if (closestWord) { targetedWord = closestWord; targetedWord.mesh.material.color.setHex(0x4ade80); }
+                if (closestWord) { targetedWord = closestWord; targetedWord.mesh.material.color.setHex(0x4ade80); targetedWord.startTime = Date.now(); }
             }
 
             if (targetedWord) {
                 let expectedChar = targetedWord.text[targetedWord.typedLength].toLowerCase();
-
                 if (typedChar === expectedChar) {
-                    targetedWord.typedLength++; correctStrokes++; playSound('type'); updateLabel(targetedWord); increaseCombo();
+                    targetedWord.typedLength++; correctStrokes++; playSound('type', comboMultiplier); updateLabel(targetedWord); shootLaser(targetedWord.mesh.position, true);
+                    if (targetedWord.isBoss || targetedWord.isNuke) { targetedWord.mesh.position.x += (Math.random() - 0.5) * 0.5; targetedWord.mesh.position.y += (Math.random() - 0.5) * 0.5; }
+                    if (targetedWord.typedLength === targetedWord.text.length) {
+                        handleWordComplete(targetedWord);
+                        if (targetedWord.isNuke) triggerNuke(); else destroyWord(targetedWord);
+                    }
+                } else { playSound('error'); shootLaser(targetedWord.mesh.position, false); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); targetedWord.hadError = true; resetCombo(); }
+            } else { playSound('error'); shootLaser(new THREE.Vector3((Math.random() - 0.5) * 10, Math.random() * 5, -20), false); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); resetCombo(); }
+        }
 
-                    if (targetedWord.isBoss) { targetedWord.mesh.position.x += (Math.random() - 0.5) * 0.5; targetedWord.mesh.position.y += (Math.random() - 0.5) * 0.5; }
-                    if (targetedWord.typedLength === targetedWord.text.length) destroyWord(targetedWord);
-                } else { playSound('error'); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); resetCombo(); }
-            } else { playSound('error'); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); resetCombo(); }
+        function togglePause() {
+            if (!gameActive) return;
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden'); pauseStartTime = Date.now(); audioCtx.suspend();
+            } else {
+                pauseOverlay.classList.add('hidden'); totalPausedTime += (Date.now() - pauseStartTime); audioCtx.resume(); mobileInput.focus();
+            }
         }
 
         window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { togglePause(); return; }
             if (e.target.tagName === 'INPUT' && e.target !== mobileInput) return;
             if (e.target === mobileInput && e.key !== 'Enter' && e.key !== 'Backspace') return;
             handleKeyPress(e.key);
         });
         mobileInput.addEventListener('input', (e) => { const val = e.target.value; if (val.length > 0) { handleKeyPress(val[val.length - 1]); e.target.value = ''; } });
-        document.body.addEventListener('click', (e) => { if (gameActive && e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A' && e.target.closest('a') === null) { mobileInput.focus(); } });
+        document.body.addEventListener('click', (e) => { if (gameActive && !isPaused && e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A' && e.target.closest('a') === null) { mobileInput.focus(); } });
 
-        function updateLabel(wordObj) { const typedStr = wordObj.text.substring(0, wordObj.typedLength); const untypedStr = wordObj.text.substring(wordObj.typedLength); wordObj.label.innerHTML = `<span class="typed">${typedStr}</span><span class="untyped">${untypedStr}</span>`; }
+        function updateLabel(wordObj) { const typedStr = wordObj.text.substring(0, wordObj.typedLength); const untypedStr = wordObj.text.substring(wordObj.typedLength); const bombPrefix = wordObj.isNuke ? `<span class="text-sm block text-yellow-300 animate-pulse tracking-widest">[BOMBA]</span>` : ''; wordObj.label.innerHTML = bombPrefix + `<span class="typed">${typedStr}</span><span class="untyped">${untypedStr}</span>`; }
 
         function destroyWord(wordObj) {
-            playSound('destroy'); scene.remove(wordObj.mesh); wordObj.label.remove(); activeWords = activeWords.filter(w => w !== wordObj); targetedWord = null; totalWordsTyped++;
-            const diffMultiplier = currentDiff === 'easy' ? 1 : (currentDiff === 'medium' ? 1.5 : 2);
-            let points = wordObj.isBoss ? wordObj.text.length * 50 : wordObj.text.length * 10;
-            points = points * diffMultiplier * comboMultiplier;
-            score += Math.round(points); scoreDisplay.innerText = score; speed += 0.001;
+            playSound('destroy');
+            if (wordObj.isBoss) { triggerCameraShake(30, 1.5); playSound('boss_die'); }
+            createExplosion(wordObj.mesh.position, wordObj.isBoss); scene.remove(wordObj.mesh); wordObj.label.remove(); activeWords = activeWords.filter(w => w !== wordObj); targetedWord = null; totalWordsTyped++;
+            const diffMultiplier = currentDiff === 'easy' ? 1 : (currentDiff === 'medium' ? 1.5 : 2); let points = wordObj.isBoss ? wordObj.text.length * 50 : wordObj.text.length * 10; points = points * diffMultiplier * comboMultiplier; score += Math.round(points); scoreDisplay.innerText = score; speed += 0.001;
         }
 
         function updateLabelsPosition() {
             activeWords.forEach(wordObj => {
                 const vector = wordObj.mesh.position.clone(); vector.project(camera);
-                const x = (vector.x * .5 + .5) * window.innerWidth; const y = (vector.y * -.5 + .5) * window.innerHeight;
-                wordObj.label.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
-                const baseScale = wordObj.isBoss ? 4.5 : 2.5; const scale = Math.max(0.5, 1 - (Math.abs(wordObj.mesh.position.z) / 90));
-                if (window.innerWidth > 600) { wordObj.label.style.fontSize = `${scale * baseScale}rem`; }
+                const x = (vector.x * 0.5 + 0.5) * window.innerWidth; const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+
+                let dist = Math.abs(camera.position.z - wordObj.mesh.position.z);
+                let scale = Math.max(0.6, 20 / Math.max(20, dist));
+
+                if (wordObj.isBoss) scale *= 1.5;
+                if (wordObj.isNuke) scale *= 1.3;
+
+                wordObj.label.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale})`;
             });
         }
 
         window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+        function formatTime(ms) { let totalSec = Math.floor(ms / 1000); let min = Math.floor(totalSec / 60).toString().padStart(2, '0'); let sec = (totalSec % 60).toString().padStart(2, '0'); return `${min}:${sec}`; }
 
         function animate() {
             requestAnimationFrame(animate);
-            if (gameActive) {
+            if (shakeFrames > 0) { camera.position.x = (Math.random() - 0.5) * shakeIntensity; camera.position.y = 2 + (Math.random() - 0.5) * shakeIntensity; shakeFrames--; }
+            else { camera.position.set(0, 2, 8); }
+
+            if (gameActive && !isPaused) {
                 gridHelper.position.z += speed; if (gridHelper.position.z > 10) gridHelper.position.z = 0;
-                for (let i = activeWords.length - 1; i >= 0; i--) {
-                    let wordObj = activeWords[i]; wordObj.mesh.position.z += speed * wordObj.speedMult; wordObj.mesh.rotation.y = Math.sin(Date.now() * 0.002) * 0.2;
-                    if (wordObj.mesh.position.z > 5) gameOver();
+
+                const positions = starMesh.geometry.attributes.position.array;
+                for (let i = 2; i < starsCount * 3; i += 3) {
+                    positions[i] += speed * 25;
+                    if (positions[i] > 8) { positions[i] = -150; positions[i - 1] = (Math.random() - 0.5) * 150; positions[i - 2] = (Math.random() - 0.5) * 150; }
                 }
-                updateLabelsPosition();
-                const currentTime = Date.now();
-                if (currentTime - lastSpawnTime >= baseSpawnRate) { spawnWord(); lastSpawnTime = currentTime; }
+                starMesh.geometry.attributes.position.needsUpdate = true; starMesh.rotation.z += 0.0005;
+
+                for (let i = lasers.length - 1; i >= 0; i--) { lasers[i].life--; lasers[i].mesh.material.opacity = lasers[i].life / 10; lasers[i].mesh.material.transparent = true; if (lasers[i].life <= 0) { scene.remove(lasers[i].mesh); lasers[i].mesh.geometry.dispose(); lasers.splice(i, 1); } }
+                for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.mesh.position.x += p.vx; p.mesh.position.y += p.vy; p.mesh.position.z += p.vz; p.life--; if (p.life <= 0) { scene.remove(p.mesh); p.mesh.geometry.dispose(); particles.splice(i, 1); } }
+                for (let i = trails.length - 1; i >= 0; i--) { let t = trails[i]; t.mesh.material.opacity = t.life / 15; t.mesh.material.transparent = true; t.mesh.scale.multiplyScalar(0.9); t.life--; if (t.life <= 0) { scene.remove(t.mesh); t.mesh.geometry.dispose(); trails.splice(i, 1); } }
+
+                for (let i = activeWords.length - 1; i >= 0; i--) {
+                    let wordObj = activeWords[i];
+                    let speedZ = speed * wordObj.speedMult;
+
+                    wordObj.mesh.position.z += speedZ;
+                    wordObj.mesh.rotation.y = Math.sin(Date.now() * 0.002) * 0.2;
+
+                    if (Math.random() > 0.6) createTrail(wordObj.mesh.position);
+
+                    if (wordObj.mesh.position.z > 5) {
+                        playSound('damage'); triggerCameraShake(20, 0.8);
+                        scene.remove(wordObj.mesh); wordObj.label.remove(); activeWords.splice(i, 1);
+                        if (targetedWord === wordObj) { targetedWord = null; resetCombo(); }
+                        health--; updateHealth();
+                    }
+                }
+                updateLabelsPosition(); const currentTime = Date.now();
+                if (currentTime - totalPausedTime - lastSpawnTime >= baseSpawnRate) { spawnWord(); lastSpawnTime = currentTime - totalPausedTime; }
             }
             renderer.render(scene, camera);
         }
 
         function startGame() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            activeWords.forEach(w => { scene.remove(w.mesh); w.label.remove(); });
-            activeWords = []; targetedWord = null; score = 0; level = 1; wordsSpawnedCount = 0; speed = baseSpeed;
-            totalWordsTyped = 0; correctStrokes = 0; totalStrokes = 0; gameStartTime = Date.now(); lastSpawnTime = Date.now();
-            scoreDisplay.innerText = score; levelDisplay.innerText = level;
-            resetCombo();
+            activeWords.forEach(w => { scene.remove(w.mesh); w.label.remove(); }); lasers.forEach(l => { scene.remove(l.mesh); l.mesh.geometry.dispose(); }); particles.forEach(p => { scene.remove(p.mesh); p.mesh.geometry.dispose(); }); trails.forEach(t => { scene.remove(t.mesh); t.mesh.geometry.dispose(); });
+            activeWords = []; targetedWord = null; score = 0; level = 1; wordsSpawnedCount = 0; speed = baseSpeed; health = 3;
+            totalWordsTyped = 0; correctStrokes = 0; totalStrokes = 0; gameStartTime = Date.now(); lastSpawnTime = Date.now(); lastNukeTime = Date.now(); maxComboReached = 1; totalPausedTime = 0; isPaused = false;
 
-            gameActive = true;
-            overlay.classList.add('hidden'); overlay.classList.remove('flex');
-            settingsBlock.classList.add('hidden'); profileHeader.classList.add('hidden'); currentStatsBlock.classList.add('hidden'); backToSettingsBtn.classList.add('hidden');
-
+            scoreDisplay.innerText = score; levelDisplay.innerText = level; updateHealth(); resetCombo(); startBGM();
+            gameActive = true; pauseBtn.classList.remove('hidden'); overlay.classList.add('hidden'); overlay.classList.remove('flex'); settingsBlock.classList.add('hidden'); profileHeader.classList.add('hidden'); currentStatsBlock.classList.add('hidden'); backToSettingsBtn.classList.add('hidden');
             mobileInput.focus();
         }
 
         function gameOver() {
-            gameActive = false; mobileInput.blur(); resetCombo();
-            let timeInMinutes = (Date.now() - gameStartTime) / 60000;
-            let wpm = timeInMinutes > 0 ? Math.round((correctStrokes / 5) / timeInMinutes) : 0;
-            let accuracy = totalStrokes > 0 ? Math.round((correctStrokes / totalStrokes) * 100) : 0;
+            gameActive = false; mobileInput.blur(); stopBGM(); pauseBtn.classList.add('hidden'); resetCombo();
+            let playTimeMs = Date.now() - totalPausedTime - gameStartTime; let timeInMinutes = playTimeMs / 60000; let formattedTime = formatTime(playTimeMs);
+            let wpm = timeInMinutes > 0 ? Math.round((correctStrokes / 5) / timeInMinutes) : 0; let accuracy = totalStrokes > 0 ? Math.round((correctStrokes / totalStrokes) * 100) : 0;
 
-            let curStats = userProfile.stats[currentDiff];
-            curStats.gamesPlayed++; curStats.wordsTyped += totalWordsTyped;
+            let curStats = userProfile.stats[currentDiff]; curStats.gamesPlayed++; curStats.wordsTyped += totalWordsTyped;
             if (wpm > curStats.bestWPM) curStats.bestWPM = wpm;
 
-            let isNewRecord = false;
-            if (score > curStats.highScore && score > 0) { curStats.highScore = score; isNewRecord = true; }
+            let isNewRecord = false; if (score > curStats.highScore && score > 0) { curStats.highScore = score; isNewRecord = true; }
+            saveProfile(); updateUIHeaders();
 
-            saveProfile();
-            recordDisplay.innerText = curStats.highScore;
+            if (isNewRecord) { playSound('victory'); mainTitle.innerText = "YANGI REKORD! 🏆"; mainTitle.className = "text-3xl sm:text-6xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 to-yellow-600 drop-shadow-2xl mb-6 text-center leading-normal py-2 whitespace-nowrap"; }
+            else { playSound('error'); mainTitle.innerText = "MAG'LUBIYAT!"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-red-500 drop-shadow-2xl mb-6 text-center leading-normal py-2"; }
 
-            if (isNewRecord) {
-                playSound('victory'); mainTitle.innerText = "YANGI REKORD! 🏆"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 to-yellow-600 drop-shadow-2xl mb-6 text-center leading-normal py-2";
-            } else {
-                playSound('error'); mainTitle.innerText = "MAG'LUBIYAT!"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-red-500 drop-shadow-2xl mb-6 text-center leading-normal py-2";
-            }
-
-            statWPM.innerText = wpm; statAcc.innerText = accuracy + "%"; statWords.innerText = totalWordsTyped; statLevel.innerText = level;
+            statWPM.innerText = wpm; statAcc.innerText = accuracy + "%"; statWords.innerText = totalWordsTyped; statLevel.innerText = level; document.getElementById('statTime').innerText = formattedTime; document.getElementById('statCombo').innerText = `x${maxComboReached}`;
             startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">YANA BIR BOR</span><span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>`;
-
             currentStatsBlock.classList.remove('hidden'); backToSettingsBtn.classList.remove('hidden'); profileHeader.classList.remove('hidden');
-            overlay.classList.remove('hidden'); overlay.classList.add('flex'); overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.95)';
+            overlay.classList.remove('hidden'); overlay.classList.add('flex'); overlay.style.backgroundColor = 'rgba(5, 8, 20, 0.95)';
         }
 
         animate();
@@ -680,3 +930,4 @@
 </body>
 
 </html>
+
