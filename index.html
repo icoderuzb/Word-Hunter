@@ -7,6 +7,11 @@
     <title>Kiber-Kosmik So'z Hujumi</title>
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <link rel="icon" type="image/png" href="favicon.png?v=1">
     <style>
         body {
@@ -29,7 +34,7 @@
             font-weight: 900;
             text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
             pointer-events: none;
-            transition: transform 0.05s linear;
+            transition: transform 0.05s linear, opacity 0.2s;
         }
 
         .boss-label {
@@ -42,29 +47,48 @@
             text-shadow: 3px 3px 0 #713f12, 0 0 20px #eab308;
         }
 
-        .typed {
-            color: #4ade80;
-            text-shadow: 0 0 10px #4ade80;
+        .bonus-label {
+            color: #e879f9;
+            text-shadow: 3px 3px 0 #4a044e, 0 0 20px #d946ef;
         }
 
         .untyped {
             color: inherit;
         }
 
-        .perfect-msg {
+        .perfect-msg,
+        .streak-msg {
             position: absolute;
-            color: #38bdf8;
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 900;
-            text-shadow: 0 0 15px #0284c7;
             pointer-events: none;
-            animation: floatUpFade 1s ease-out forwards;
             z-index: 50;
+            text-align: center;
+        }
+
+        .perfect-msg {
+            color: #38bdf8;
+            text-shadow: 0 0 15px #0284c7;
+            animation: floatUpFade 1s ease-out forwards;
+        }
+
+        .streak-msg {
+            color: #fb923c;
+            text-shadow: 0 0 20px #ea580c, 3px 3px 0 #000;
+            animation: scaleFade 2s ease-in-out forwards;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
         }
 
         @media (max-width: 600px) {
             .word-label {
                 font-size: 1.5rem !important;
+            }
+
+            .streak-msg {
+                font-size: 2rem;
             }
         }
 
@@ -117,6 +141,43 @@
                 opacity: 0;
             }
         }
+
+        @keyframes scaleFade {
+            0% {
+                transform: translate(-50%, -50%) scale(0.2);
+                opacity: 0;
+            }
+
+            20% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+
+            80% {
+                transform: translate(-50%, -50%) scale(1.0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        /* X2 Bonus Banner */
+        #bonusBanner {
+            animation: pulseBg 1s infinite alternate;
+        }
+
+        @keyframes pulseBg {
+            0% {
+                box-shadow: 0 0 10px #d946ef, inset 0 0 10px #d946ef;
+            }
+
+            100% {
+                box-shadow: 0 0 30px #d946ef, inset 0 0 20px #d946ef;
+            }
+        }
     </style>
 </head>
 
@@ -139,8 +200,13 @@
                     id="recordDisplay">0</span></h4>
         </div>
         <div
-            class="bg-slate-900/80 px-3 py-2 sm:px-6 sm:py-2 rounded-xl shadow-xl backdrop-blur-md border border-red-500/50 text-center">
+            class="bg-slate-900/80 px-3 py-2 sm:px-6 sm:py-2 rounded-xl shadow-xl backdrop-blur-md border border-red-500/50 text-center flex items-center justify-center gap-2">
             <span id="healthDisplay" class="text-lg sm:text-xl tracking-widest">❤️❤️❤️</span>
+            <span id="shieldDisplay" class="hidden text-xl drop-shadow-[0_0_10px_#60a5fa]">🛡️</span>
+        </div>
+        <div id="bonusBanner"
+            class="hidden bg-fuchsia-900/80 px-3 py-1 rounded-xl text-center border border-fuchsia-400">
+            <span class="text-xs sm:text-sm font-black text-fuchsia-300 tracking-widest">x2 BALL FAOL!</span>
         </div>
     </div>
 
@@ -162,8 +228,7 @@
                     class="text-blue-400 font-bold uppercase">O'rtacha</span></p>
             <p class="text-sm font-medium text-slate-300 mt-1">Til: <span id="langDisplayTop"
                     class="text-green-400 font-bold uppercase">UZ</span></p>
-            <p class="text-xs text-slate-400 mt-1">Bekor qilish: <kbd
-                    class="bg-slate-700 px-1 rounded text-white">Backspace</kbd></p>
+            <p class="text-xs text-slate-400 mt-1">WPM: <span id="liveWPM" class="text-white font-bold">0</span></p>
         </div>
 
         <div id="comboContainer"
@@ -175,15 +240,20 @@
     </div>
 
     <div id="pauseOverlay"
-        class="hidden absolute inset-0 bg-slate-950/80 z-[80] flex flex-col items-center justify-center backdrop-blur-md">
+        class="hidden absolute inset-0 bg-slate-950/80 z-[80] flex flex-col items-center justify-center backdrop-blur-md gap-4">
         <h2 class="text-5xl font-black text-white tracking-widest mb-6">PAUZA</h2>
         <button onclick="togglePause()"
-            class="bg-blue-600 hover:bg-blue-500 px-8 py-4 rounded-xl text-white font-bold tracking-wider shadow-lg cursor-pointer">DAVOM
+            class="w-64 bg-blue-600 hover:bg-blue-500 px-8 py-4 rounded-xl text-white font-bold tracking-wider shadow-lg cursor-pointer">DAVOM
             ETISH</button>
+        <button onclick="returnToMenu()"
+            class="w-64 bg-red-600/50 hover:bg-red-600 px-8 py-4 rounded-xl text-white font-bold tracking-wider border border-red-500 shadow-lg cursor-pointer">BOSH
+            MENYU</button>
     </div>
 
     <div id="overlay"
         class="absolute inset-0 bg-slate-900/95 z-20 flex flex-col items-center justify-start text-white backdrop-blur-lg transition-all duration-300 overflow-y-auto custom-scrollbar">
+
+        <!-- ad -->
 
         <div id="profileHeader" class="w-full text-center px-4 pt-6 sm:pt-10 shrink-0">
             <p class="text-slate-300 font-bold text-sm sm:text-lg flex flex-wrap items-center justify-center gap-2">
@@ -203,7 +273,7 @@
             </div>
         </div>
 
-        <div class="flex flex-col items-center justify-center w-full max-w-2xl px-4 flex-grow my-auto py-6">
+        <div class="flex flex-col items-center justify-center w-full max-w-2xl px-4 flex-grow my-auto pb-24 sm:pb-6">
             <h1 id="mainTitle"
                 class="text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 drop-shadow-2xl mb-4 text-center leading-normal py-2">
                 SO'Z HUJUMI
@@ -211,7 +281,6 @@
 
             <div id="settingsBlock"
                 class="w-full max-w-md bg-slate-800/80 p-4 sm:p-6 rounded-2xl border border-slate-600 mb-6 shadow-xl shrink-0 flex flex-col gap-4">
-
                 <div>
                     <h3 class="text-center text-gray-300 font-bold mb-2 uppercase text-xs sm:text-sm tracking-wider">
                         Lug'at tilini tanlang</h3>
@@ -289,39 +358,28 @@
             </div>
 
             <button id="startBtn" onclick="startGame()"
-                class="w-full max-w-md bg-green-600 hover:bg-green-500 border border-green-400 rounded-xl p-4 text-center shadow-lg transition-transform transform active:scale-95 cursor-pointer shrink-0">
+                class="w-full max-w-md bg-green-600 hover:bg-green-500 border border-green-400 rounded-xl p-4 text-center shadow-lg transition-transform transform active:scale-95 cursor-pointer shrink-0 z-40 relative">
                 <span class="text-lg sm:text-xl font-bold text-white block">O'YINNI BOSHLASH</span>
                 <span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>
             </button>
-
-            <button id="backToSettingsBtn" onclick="showSettings()"
-                class="hidden mt-4 text-gray-400 hover:text-white underline text-sm cursor-pointer shrink-0">Sozlamalarni
-                o'zgartirish</button>
+            <a href="https://t.me/favoritesuz" target="_blank" id="telegramAd"
+                class="mt-6 w-full max-w-md min-[1181px]:max-w-[20rem] min-[1181px]:mt-0 min-[1181px]:absolute min-[1181px]:bottom-20 min-[1181px]:right-6 z-30 bg-slate-800/60 backdrop-blur-lg border border-blue-500/30 p-3 rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.2)] flex items-center gap-4 hover:scale-105 hover:border-blue-400 transition-all cursor-pointer">
+                <div
+                    class="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                    <img src="adpic.jpg" alt="Favorites" class="w-full h-full object-cover">
+                </div>
+                <div class="flex flex-col text-left">
+                    <p class="text-[10px] sm:text-xs text-blue-300 font-bold uppercase tracking-widest leading-tight">
+                        Bizning kanal</p>
+                    <div class="flex items-center gap-2">
+                        <p class="text-base sm:text-xl font-black text-white leading-tight">FAVORITES</p>
+                        <iconify-icon icon="logos:telegram" width="30" height="30"></iconify-icon>
+                    </div>
+                    <p class="text-[10px] text-slate-400">t.me/favoritesuz</p>
+                </div>
+            </a>
         </div>
 
-        <footer
-            class="w-full bg-slate-950/50 border-t border-slate-800 py-4 shrink-0 flex flex-col items-center justify-center mt-auto">
-            <div class="flex flex-row items-center justify-center gap-6 sm:gap-10">
-                <a href="https://t.me/icoderuzb" target="_blank"
-                    class="flex items-center gap-2 hover:text-blue-400 transition-colors text-sm font-bold text-slate-400"><svg
-                        class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.941z" />
-                    </svg>Telegram</a>
-                <a href="https://instagram.com/icoderuzb" target="_blank"
-                    class="flex items-center gap-2 hover:text-pink-500 transition-colors text-sm font-bold text-slate-400"><svg
-                        class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.88z" />
-                    </svg>Instagram</a>
-                <a href="https://github.com/icoderuzb" target="_blank"
-                    class="flex items-center gap-2 hover:text-white transition-colors text-sm font-bold text-slate-400"><svg
-                        class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.332-5.467-5.93 0-1.31.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                    </svg>GitHub</a>
-            </div>
-        </footer>
     </div>
 
     <div id="nameModal"
@@ -361,8 +419,14 @@
     <div id="overallStatsModal"
         class="hidden absolute inset-0 bg-slate-950/95 z-50 flex-col items-center justify-start p-4 custom-scrollbar overflow-y-auto backdrop-blur-xl">
         <h2 class="text-3xl sm:text-4xl font-black text-white mb-2 tracking-widest text-center mt-8">🏆 STATISTIKA</h2>
-        <p class="text-slate-400 mb-8 text-center text-sm">O'yinchi: <span id="modalPlayerName"
+        <p class="text-slate-400 mb-6 text-center text-sm">O'yinchi: <span id="modalPlayerName"
                 class="font-bold text-blue-400">ICODERUZB</span></p>
+
+        <div
+            class="w-full max-w-4xl bg-slate-900 p-4 rounded-xl border border-slate-700 mb-6 hidden sm:block shadow-lg">
+            <canvas id="wpmChart" height="80"></canvas>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full max-w-5xl shrink-0">
             <div class="bg-slate-900 border-t-4 border-green-500 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
                 <h3 class="text-xl font-bold text-green-400 mb-4 text-center tracking-widest">OSON</h3>
@@ -426,7 +490,18 @@
     <div id="labelsContainer" class="absolute inset-0 pointer-events-none z-0"></div>
 
     <script>
-        // DOM ELEMENTS VA XAVFSIZLIK
+        // --- DINAMIK KEYFRAMES (PERFECT VA STREAK UCHUN) ---
+        if (!document.getElementById('dynamic-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'dynamic-keyframes';
+            style.innerHTML = `
+                @keyframes floatUpFade { 0% { transform: translate(-50%, 0) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50px) scale(1.5); opacity: 0; } }
+                @keyframes scaleFade { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 80% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // --- DOM ELEMENTS VA XAVFSIZLIK ---
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
         let bgmOscillator = null; let bgmGain = null;
@@ -440,8 +515,9 @@
         const scoreDisplay = document.getElementById('scoreDisplay'); const levelDisplay = document.getElementById('levelDisplay'); const recordDisplay = document.getElementById('recordDisplay'); const diffDisplayTop = document.getElementById('diffDisplayTop'); const langDisplayTop = document.getElementById('langDisplayTop'); const diffDesc = document.getElementById('diffDesc'); const labelsContainer = document.getElementById('labelsContainer'); const flashOverlay = document.getElementById('flashOverlay');
         const comboContainer = document.getElementById('comboContainer'); const comboDisplay = document.getElementById('comboDisplay'); const comboProgress = document.getElementById('comboProgress');
         const healthDisplay = document.getElementById('healthDisplay'); const statTime = document.getElementById('statTime'); const statCombo = document.getElementById('statCombo'); const muteBtn = document.getElementById('muteBtn'); const nukeOverlay = document.getElementById('nukeOverlay');
+        const telegramAd = document.getElementById('telegramAd'); const bonusBanner = document.getElementById('bonusBanner'); const shieldDisplay = document.getElementById('shieldDisplay');
 
-        // DICTIONARIES (TILLAR)
+        // --- LUG'ATLAR ---
         const dictUZ = {
             lvl1: ["olma", "suv", "gul", "bol", "non", "kuz", "yoz", "uy", "tom", "ona", "uka", "opa", "kuch", "qand", "qish", "kema", "fil", "sher", "qo'y", "tog'", "bog'", "qiz", "xat", "choy", "sir", "til", "yuz", "ko'z", "zar", "dam", "yil", "oy", "kun", "so'z", "dunyo", "yo'l", "sham", "qush", "baliq"],
             lvl2: ["bahor", "kitob", "qalam", "anjir", "xurmo", "shahar", "osmon", "bulut", "yigit", "daryo", "vatan", "tuya", "paxta", "havo", "dars", "olcha", "piyoz", "sabzi", "bodom", "hayot", "soat", "o'g'il", "to'y", "qizil", "yashil", "telefon"],
@@ -479,13 +555,18 @@
         };
 
         // PROFILE & SETTINGS
-        let userProfile = JSON.parse(localStorage.getItem('typingGameProfile_v5')) || {
+        let userProfile = JSON.parse(localStorage.getItem('typingGameProfile_v6')) || {
             playerName: "ICODERUZB", lastDifficulty: 'medium', lastLanguage: 'uz', isMuted: false,
-            stats: { easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }, medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }, hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 } }
+            stats: {
+                easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0, history: [] },
+                medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0, history: [] },
+                hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0, history: [] }
+            }
         };
 
-        playerNameDisplay.innerText = userProfile.playerName; modalPlayerName.innerText = userProfile.playerName;
-        let isMuted = userProfile.isMuted; muteBtn.innerText = isMuted ? "🔇" : "🔊";
+        if (playerNameDisplay) playerNameDisplay.innerText = userProfile.playerName;
+        if (modalPlayerName) modalPlayerName.innerText = userProfile.playerName;
+        let isMuted = userProfile.isMuted; if (muteBtn) muteBtn.innerText = isMuted ? "🔇" : "🔊";
 
         const diffSettings = {
             easy: { speedBase: 0.04, spawnRate: 2500, label: 'Oson', desc: "Sekin tezlik va katta tanaffus." },
@@ -498,58 +579,82 @@
         let baseSpeed = diffSettings[currentDiff].speedBase;
         let baseSpawnRate = diffSettings[currentDiff].spawnRate;
 
-        document.getElementById('diff' + currentDiff.charAt(0).toUpperCase() + currentDiff.slice(1)).checked = true;
-        document.getElementById('lang' + currentLang.charAt(0).toUpperCase() + currentLang.slice(1)).checked = true;
-        diffDesc.innerText = diffSettings[currentDiff].desc;
+        if (document.getElementById('diff' + currentDiff.charAt(0).toUpperCase() + currentDiff.slice(1))) document.getElementById('diff' + currentDiff.charAt(0).toUpperCase() + currentDiff.slice(1)).checked = true;
+        if (document.getElementById('lang' + currentLang.charAt(0).toUpperCase() + currentLang.slice(1))) document.getElementById('lang' + currentLang.charAt(0).toUpperCase() + currentLang.slice(1)).checked = true;
+        if (diffDesc) diffDesc.innerText = diffSettings[currentDiff].desc;
+
+        function getRank(score) {
+            if (score < 1000) return { name: "Boshlovchi 🥉", color: 0x4ade80 };
+            if (score < 3000) return { name: "Kosmik Surfer 🥈", color: 0x06b6d4 };
+            if (score < 6000) return { name: "Klaviatura Ritsari 🥇", color: 0x3b82f6 };
+            if (score < 10000) return { name: "Kiber Qahramon 💎", color: 0xd946ef };
+            return { name: "Afsona 👑", color: 0xf59e0b };
+        }
 
         function updateUIHeaders() {
             if (recordDisplay) recordDisplay.innerText = userProfile.stats[currentDiff].highScore;
             if (diffDisplayTop) diffDisplayTop.innerText = diffSettings[currentDiff].label;
             if (langDisplayTop) langDisplayTop.innerText = currentLang.toUpperCase();
-            if (rankDisplay) rankDisplay.innerText = getRank(userProfile.stats[currentDiff].highScore);
+            if (rankDisplay) rankDisplay.innerText = getRank(userProfile.stats[currentDiff].highScore).name;
         }
         updateUIHeaders();
 
-        function getRank(score) {
-            if (score < 1000) return "Boshlovchi 🥉";
-            if (score < 3000) return "Kosmik Surfer 🥈";
-            if (score < 6000) return "Klaviatura Ritsari 🥇";
-            if (score < 10000) return "Kiber Qahramon 💎";
-            return "Afsona 👑";
+        function saveProfile() { localStorage.setItem('typingGameProfile_v6', JSON.stringify(userProfile)); }
+
+        function openNameModal() { if (newNameInput) newNameInput.value = userProfile.playerName; if (nameModal) nameModal.classList.remove('hidden'); setTimeout(() => { if (nameModal) nameModal.classList.remove('opacity-0'); if (nameModalContent) nameModalContent.classList.remove('scale-95'); if (nameModalContent) nameModalContent.classList.add('scale-100'); if (newNameInput) newNameInput.focus(); }, 10); }
+        function closeNameModal() { if (nameModal) nameModal.classList.add('opacity-0'); if (nameModalContent) nameModalContent.classList.remove('scale-100'); if (nameModalContent) nameModalContent.classList.add('scale-95'); setTimeout(() => { if (nameModal) nameModal.classList.add('hidden'); if (mobileInput) mobileInput.focus(); }, 300); }
+        function saveNameFromModal() { let newName = newNameInput ? newNameInput.value : ""; if (newName && newName.trim() !== "") { userProfile.playerName = newName.trim().substring(0, 20); if (playerNameDisplay) playerNameDisplay.innerText = userProfile.playerName; if (modalPlayerName) modalPlayerName.innerText = userProfile.playerName; saveProfile(); } closeNameModal(); }
+        if (newNameInput) newNameInput.addEventListener('keypress', function (e) { if (e.key === 'Enter') saveNameFromModal(); });
+
+        function openClearStatsModal() { if (clearStatsModal) clearStatsModal.classList.remove('hidden'); setTimeout(() => { if (clearStatsModal) clearStatsModal.classList.remove('opacity-0'); if (clearStatsModalContent) clearStatsModalContent.classList.remove('scale-95'); if (clearStatsModalContent) clearStatsModalContent.classList.add('scale-100'); }, 10); }
+        function closeClearStatsModal() { if (clearStatsModal) clearStatsModal.classList.add('opacity-0'); if (clearStatsModalContent) clearStatsModalContent.classList.remove('scale-100'); if (clearStatsModalContent) clearStatsModalContent.classList.add('scale-95'); setTimeout(() => { if (clearStatsModal) clearStatsModal.classList.add('hidden'); }, 300); }
+        function confirmClearStats() {
+            userProfile.stats = {
+                easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0, history: [] },
+                medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0, history: [] },
+                hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0, history: [] }
+            };
+            saveProfile(); showOverallStats(); updateUIHeaders(); closeClearStatsModal();
         }
 
-        function saveProfile() { localStorage.setItem('typingGameProfile_v5', JSON.stringify(userProfile)); }
-
-        // Modals
-        function openNameModal() { newNameInput.value = userProfile.playerName; nameModal.classList.remove('hidden'); setTimeout(() => { nameModal.classList.remove('opacity-0'); nameModalContent.classList.remove('scale-95'); nameModalContent.classList.add('scale-100'); newNameInput.focus(); }, 10); }
-        function closeNameModal() { nameModal.classList.add('opacity-0'); nameModalContent.classList.remove('scale-100'); nameModalContent.classList.add('scale-95'); setTimeout(() => { nameModal.classList.add('hidden'); mobileInput.focus(); }, 300); }
-        function saveNameFromModal() { let newName = newNameInput.value; if (newName && newName.trim() !== "") { userProfile.playerName = newName.trim().substring(0, 20); playerNameDisplay.innerText = userProfile.playerName; modalPlayerName.innerText = userProfile.playerName; saveProfile(); } closeNameModal(); }
-        newNameInput.addEventListener('keypress', function (e) { if (e.key === 'Enter') saveNameFromModal(); });
-
-        function openClearStatsModal() { clearStatsModal.classList.remove('hidden'); setTimeout(() => { clearStatsModal.classList.remove('opacity-0'); clearStatsModalContent.classList.remove('scale-95'); clearStatsModalContent.classList.add('scale-100'); }, 10); }
-        function closeClearStatsModal() { clearStatsModal.classList.add('opacity-0'); clearStatsModalContent.classList.remove('scale-100'); clearStatsModalContent.classList.add('scale-95'); setTimeout(() => { clearStatsModal.classList.add('hidden'); }, 300); }
-        function confirmClearStats() { userProfile.stats = { easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }, medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }, hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 } }; saveProfile(); showOverallStats(); updateUIHeaders(); closeClearStatsModal(); }
-
-        function changeDifficulty(diff) { currentDiff = diff; baseSpeed = diffSettings[diff].speedBase; baseSpawnRate = diffSettings[diff].spawnRate; diffDesc.innerText = diffSettings[diff].desc; userProfile.lastDifficulty = diff; saveProfile(); updateUIHeaders(); }
+        function changeDifficulty(diff) { currentDiff = diff; baseSpeed = diffSettings[diff].speedBase; baseSpawnRate = diffSettings[diff].spawnRate; if (diffDesc) diffDesc.innerText = diffSettings[diff].desc; userProfile.lastDifficulty = diff; saveProfile(); updateUIHeaders(); }
         function changeLanguage(lang) { currentLang = lang; userProfile.lastLanguage = lang; saveProfile(); updateUIHeaders(); }
 
         function showSettings() {
-            currentStatsBlock.classList.add('hidden'); backToSettingsBtn.classList.add('hidden'); settingsBlock.classList.remove('hidden');
-            mainTitle.innerText = "SO'Z HUJUMI"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 drop-shadow-2xl mb-4 text-center leading-normal py-2"; startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">O'YINNI BOSHLASH</span><span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>`;
+            if (currentStatsBlock) currentStatsBlock.classList.add('hidden');
+            if (backToSettingsBtn) backToSettingsBtn.classList.add('hidden');
+            if (settingsBlock) settingsBlock.classList.remove('hidden');
+            if (mainTitle) { mainTitle.innerText = "SO'Z HUJUMI"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 drop-shadow-2xl mb-4 text-center leading-normal py-2"; }
+            if (startBtn) startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">O'YINNI BOSHLASH</span><span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>`;
         }
 
+        let wpmChartInstance = null;
         function showOverallStats() {
-            ['easy', 'medium', 'hard'].forEach(diff => { const Diff = diff.charAt(0).toUpperCase() + diff.slice(1); document.getElementById('stScore' + Diff).innerText = userProfile.stats[diff].highScore; document.getElementById('stWPM' + Diff).innerText = userProfile.stats[diff].bestWPM; document.getElementById('stGames' + Diff).innerText = userProfile.stats[diff].gamesPlayed; document.getElementById('stWords' + Diff).innerText = userProfile.stats[diff].wordsTyped; });
-            overlay.classList.add('hidden'); overallStatsModal.classList.remove('hidden'); overallStatsModal.classList.add('flex');
+            ['easy', 'medium', 'hard'].forEach(diff => { const Diff = diff.charAt(0).toUpperCase() + diff.slice(1); if (document.getElementById('stScore' + Diff)) document.getElementById('stScore' + Diff).innerText = userProfile.stats[diff].highScore; if (document.getElementById('stWPM' + Diff)) document.getElementById('stWPM' + Diff).innerText = userProfile.stats[diff].bestWPM; if (document.getElementById('stGames' + Diff)) document.getElementById('stGames' + Diff).innerText = userProfile.stats[diff].gamesPlayed; if (document.getElementById('stWords' + Diff)) document.getElementById('stWords' + Diff).innerText = userProfile.stats[diff].wordsTyped; });
+
+            const wpmCanvas = document.getElementById('wpmChart');
+            if (wpmCanvas) {
+                const ctx = wpmCanvas.getContext('2d');
+                if (wpmChartInstance) wpmChartInstance.destroy();
+                let hist = userProfile.stats[currentDiff].history || [];
+                let labels = hist.map((_, i) => `O'yin ${i + 1}`);
+                wpmChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: labels, datasets: [{ label: `${diffSettings[currentDiff].label} WPM Tarixi`, data: hist, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.2)', borderWidth: 2, tension: 0.3, fill: true, pointBackgroundColor: '#60a5fa' }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+                });
+            }
+
+            if (overlay) overlay.classList.add('hidden'); if (overallStatsModal) overallStatsModal.classList.remove('hidden'); if (overallStatsModal) overallStatsModal.classList.add('flex');
         }
-        function closeOverallStats() { overallStatsModal.classList.add('hidden'); overallStatsModal.classList.remove('flex'); overlay.classList.remove('hidden'); }
+        function closeOverallStats() { if (overallStatsModal) overallStatsModal.classList.add('hidden'); if (overallStatsModal) overallStatsModal.classList.remove('flex'); if (overlay) overlay.classList.remove('hidden'); }
 
         // AUDIO FUNKSIYALAR
         function toggleMute() {
-            isMuted = !isMuted; userProfile.isMuted = isMuted; saveProfile(); muteBtn.innerText = isMuted ? "🔇" : "🔊";
+            isMuted = !isMuted; userProfile.isMuted = isMuted; saveProfile(); if (muteBtn) muteBtn.innerText = isMuted ? "🔇" : "🔊";
             if (isMuted && bgmGain) { bgmGain.gain.setTargetAtTime(0.001, audioCtx.currentTime, 0.1); }
             else if (!isMuted && bgmGain && gameActive) { bgmGain.gain.setTargetAtTime(0.02, audioCtx.currentTime, 0.1); }
-            mobileInput.focus();
+            if (mobileInput) mobileInput.focus();
         }
 
         function startBGM() {
@@ -586,12 +691,14 @@
             else if (type === 'error') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); osc.start(); osc.stop(audioCtx.currentTime + 0.15); }
             else if (type === 'damage') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(40, audioCtx.currentTime + 0.4); gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); osc.start(); osc.stop(audioCtx.currentTime + 0.4); }
             else if (type === 'victory') { osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.2); osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.4); osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.6); gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5); osc.start(); osc.stop(audioCtx.currentTime + 1.5); }
+            else if (type === 'shield_break') { osc.type = 'square'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3); gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3); osc.start(); osc.stop(audioCtx.currentTime + 0.3); }
         }
 
         // THREE.JS SETUP
         const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x050814, 0.015);
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100); camera.position.set(0, 2, 8);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(window.innerWidth, window.innerHeight); document.body.insertBefore(renderer.domElement, labelsContainer);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(window.innerWidth, window.innerHeight);
+        if (labelsContainer) document.body.insertBefore(renderer.domElement, labelsContainer);
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); scene.add(ambientLight);
         const gridHelper = new THREE.GridHelper(200, 100, 0x4ade80, 0x1e293b); gridHelper.position.y = -2; scene.add(gridHelper);
 
@@ -604,18 +711,20 @@
         const normalMat = new THREE.MeshBasicMaterial({ color: 0x334155, wireframe: true });
         const bossMat = new THREE.MeshBasicMaterial({ color: 0xef4444, wireframe: true });
         const nukeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, wireframe: true });
-        const laserMatGreen = new THREE.LineBasicMaterial({ color: 0x4ade80, linewidth: 2 });
+        const bonusMat = new THREE.MeshBasicMaterial({ color: 0xd946ef, wireframe: true });
         const laserMatRed = new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 2 });
         const particleMat = new THREE.MeshBasicMaterial({ color: 0x4ade80 });
         const bossParticleMat = new THREE.MeshBasicMaterial({ color: 0xf87171 });
         const trailMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
 
         // O'YIN O'ZGARUVCHILARI
-        let gameActive = false; let isPaused = false; let score = 0; let level = 1; let speed = 0; let health = 3;
+        let gameActive = false; let isPaused = false; let score = 0; let level = 1; let speed = 0; let health = 3; let hasShield = false;
         let activeWords = []; let targetedWord = null; let wordsSpawnedCount = 0; let lastSpawnTime = 0;
         let totalWordsTyped = 0; let correctStrokes = 0; let totalStrokes = 0; let gameStartTime = 0; let pauseStartTime = 0; let totalPausedTime = 0;
-        let comboMultiplier = 1; let comboWordsCount = 0; let maxComboReached = 1; let lastNukeTime = 0;
-        let particles = []; let lasers = []; let trails = []; let shakeFrames = 0; let shakeIntensity = 0;
+        let comboMultiplier = 1; let comboWordsCount = 0; let maxComboReached = 1; let lastNukeTime = 0; let wordsWithoutError = 0;
+        let doublePointsActive = false; let doublePointsEndTime = 0; let warpFrames = 0;
+        let particles = []; let lasers = []; let trails = []; let shockwaves = []; let shakeFrames = 0; let shakeIntensity = 0;
+        let lastLiveWPMUpdate = 0;
 
         function cleanWord(str) { return str.replace(/[‘’`]/g, "'"); }
         function isLetterOrApostrophe(char) {
@@ -631,31 +740,7 @@
             return dictUZ;
         }
 
-        // EFFECT FUNCTIONS
-        function shootLaser(targetPos, isHit) {
-            const material = isHit ? laserMatGreen : laserMatRed;
-            const points = [new THREE.Vector3(0, -2, 5), targetPos.clone()];
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const line = new THREE.Line(geometry, material); scene.add(line); lasers.push({ mesh: line, life: 10 });
-        }
-
-        function createExplosion(pos, isBoss = false) {
-            const count = isBoss ? 50 : 15;
-            const mat = isBoss ? bossParticleMat : particleMat;
-            for (let i = 0; i < count; i++) {
-                const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), mat);
-                p.position.copy(pos);
-                p.vx = (Math.random() - 0.5) * (isBoss ? 4 : 2); p.vy = (Math.random() - 0.5) * (isBoss ? 4 : 2); p.vz = (Math.random() - 0.5) * (isBoss ? 4 : 2);
-                scene.add(p); particles.push({ mesh: p, life: isBoss ? 50 : 30 });
-            }
-        }
-
-        function createTrail(pos) {
-            const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), trailMat);
-            p.position.copy(pos);
-            scene.add(p); trails.push({ mesh: p, life: 15 });
-        }
-
+        // POP-UP EFFECTLAR (PERFECT VA STREAK)
         function showPerfect(x, y) {
             const msg = document.createElement('div');
             msg.className = 'perfect-msg'; msg.innerText = 'Perfect!';
@@ -664,72 +749,103 @@
             setTimeout(() => { msg.remove(); }, 1000);
         }
 
+        function showStreak(text) {
+            const msg = document.createElement('div');
+            msg.className = 'streak-msg'; msg.innerText = text;
+            document.body.appendChild(msg);
+            setTimeout(() => { msg.remove(); }, 2000);
+        }
+
+        function shootLaser(targetPos, isHit) {
+            let colorHex = isHit ? getRank(userProfile.stats[currentDiff].highScore).color : 0xef4444;
+            let mat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 2 });
+            const points = [new THREE.Vector3(0, -2, 5), targetPos.clone()];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, mat); scene.add(line); lasers.push({ mesh: line, life: 10 });
+        }
+
+        function createExplosion(pos, isBoss = false) {
+            const count = isBoss ? 50 : 15;
+            const mat = isBoss ? bossParticleMat : particleMat;
+            for (let i = 0; i < count; i++) {
+                const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), mat);
+                p.position.copy(pos);
+                p.vx = (Math.random() - 0.5) * (isBoss ? 4 : 2); p.vy = (Math.random() * 3) + (isBoss ? 2 : 1); p.vz = (Math.random() - 0.5) * (isBoss ? 4 : 2);
+                scene.add(p); particles.push({ mesh: p, life: isBoss ? 60 : 40 });
+            }
+        }
+
+        function createTrail(pos) {
+            const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), trailMat); p.position.copy(pos); scene.add(p); trails.push({ mesh: p, life: 15 });
+        }
+
         function triggerCameraShake(frames, intensity) { shakeFrames = frames; shakeIntensity = intensity; }
 
         function updateHealth() {
             let hStr = ""; for (let i = 0; i < 3; i++) hStr += i < health ? "❤️" : "🖤";
-            healthDisplay.innerText = hStr; if (health <= 0) gameOver();
+            if (healthDisplay) healthDisplay.innerText = hStr;
+            if (shieldDisplay) shieldDisplay.style.display = hasShield ? 'inline-block' : 'none';
+            if (health <= 0) gameOver();
         }
 
         function triggerNuke() {
             playSound('nuke'); triggerCameraShake(50, 2.0);
-            document.getElementById('nukeOverlay').style.opacity = '0.9'; setTimeout(() => { document.getElementById('nukeOverlay').style.opacity = '0'; }, 300);
+            if (nukeOverlay) nukeOverlay.style.opacity = '0.9'; setTimeout(() => { if (nukeOverlay) nukeOverlay.style.opacity = '0'; }, 300);
             for (let i = activeWords.length - 1; i >= 0; i--) {
                 let w = activeWords[i]; createExplosion(w.mesh.position, w.isBoss); scene.remove(w.mesh); w.label.remove();
                 const diffMultiplier = currentDiff === 'easy' ? 1 : (currentDiff === 'medium' ? 1.5 : 2);
-                let p = w.isBoss ? w.text.length * 50 : (w.isNuke ? 500 : w.text.length * 10); score += Math.round(p * diffMultiplier * comboMultiplier);
+                let p = w.isBoss ? w.text.length * 50 : (w.isNuke ? 500 : w.text.length * 10); score += Math.round(p * diffMultiplier * comboMultiplier * (doublePointsActive ? 2 : 1));
             }
-            activeWords = []; targetedWord = null; scoreDisplay.innerText = score; lastNukeTime = Date.now();
+            activeWords = []; targetedWord = null; if (scoreDisplay) scoreDisplay.innerText = score; lastNukeTime = Date.now();
         }
 
         function spawnWord() {
             if (!gameActive || isPaused) return;
             const dict = getActiveDict();
             const activeFirstLetters = activeWords.map(w => w.text[0].toLowerCase());
-            wordsSpawnedCount++; let isBoss = false; let isNuke = false; let text = "";
+            wordsSpawnedCount++; let isBoss = false; let isNuke = false; let isBonus = false; let text = "";
 
             let nukeWords = [...dict.lvl4, ...dict.lvl5].filter(w => w.length >= 9 && w.length <= 15);
             if (level >= 2 && Date.now() - totalPausedTime - lastNukeTime >= 35000 && nukeWords.length > 0) {
-                let availableNukes = nukeWords.filter(w => !activeFirstLetters.includes(w[0].toLowerCase()));
+                let availableNukes = nukeWords.filter(w => w && w.length > 0 && !activeFirstLetters.includes(w[0].toLowerCase()));
                 if (availableNukes.length > 0) { isNuke = true; text = cleanWord(availableNukes[Math.floor(Math.random() * availableNukes.length)]); lastNukeTime = Date.now() - totalPausedTime; }
             }
 
             if (!isNuke) {
                 if (wordsSpawnedCount % 10 === 0) {
-                    isBoss = true; let availableBosses = dict.boss.filter(w => !activeFirstLetters.includes(w[0].toLowerCase())); if (availableBosses.length === 0) availableBosses = dict.boss;
+                    isBoss = true;
+                    let availableBosses = dict.boss.filter(w => w && w.length > 0 && !activeFirstLetters.includes(w[0].toLowerCase()));
+                    if (availableBosses.length === 0) availableBosses = dict.boss;
                     text = cleanWord(availableBosses[Math.floor(Math.random() * availableBosses.length)]); playSound('boss_spawn');
                 } else {
                     let sourceList = dict.lvl1;
-                    if (score < 500) { level = 1; sourceList = dict.lvl1; } else if (score < 1500) { level = 2; sourceList = dict.lvl1.concat(dict.lvl2); } else if (score < 3000) { level = 3; sourceList = dict.lvl2.concat(dict.lvl3); } else if (score < 5000) { level = 4; sourceList = dict.lvl3.concat(dict.lvl4); } else { level = 5; sourceList = dict.lvl4.concat(dict.lvl5); }
-                    levelDisplay.innerText = level;
-                    let availableWords = sourceList.filter(w => !activeFirstLetters.includes(cleanWord(w)[0].toLowerCase())); if (availableWords.length === 0) { wordsSpawnedCount--; return; }
+                    if (score < 500) { level = 1; sourceList = dict.lvl1; }
+                    else if (score < 1500) { level = 2; sourceList = dict.lvl1.concat(dict.lvl2); }
+                    else if (score < 3000) { level = 3; sourceList = dict.lvl2.concat(dict.lvl3); }
+                    else if (score < 5000) { level = 4; sourceList = dict.lvl3.concat(dict.lvl4); }
+                    else { level = 5; sourceList = dict.lvl4.concat(dict.lvl5); }
+
+                    if (levelDisplay) levelDisplay.innerText = level;
+                    let availableWords = sourceList.filter(w => w && w.length > 0 && !activeFirstLetters.includes(cleanWord(w)[0].toLowerCase()));
+                    if (availableWords.length === 0) { wordsSpawnedCount--; return; }
                     text = cleanWord(availableWords[Math.floor(Math.random() * availableWords.length)]);
+
+                    if (Math.random() < 0.1) isBonus = true; // 10% x2 bonus chiqish ehtimoli
                 }
             }
 
-            let safeX = window.innerWidth < 600 ? 8 : 16;
+            let safeX = window.innerWidth < 600 ? 15 : 30;
             let startX, startY;
 
-            if (isBoss || isNuke) {
-                startX = 0;
-                startY = 2;
-            } else {
-                let overlapping = true;
-                let attempts = 0;
-
+            if (isBoss || isNuke || isBonus) { startX = 0; startY = 4; }
+            else {
+                let overlapping = true; let attempts = 0;
                 while (overlapping && attempts < 50) {
-                    startX = (Math.random() - 0.5) * safeX;
-                    startY = 1 + Math.random() * 3;
-                    overlapping = false;
-
+                    startX = (Math.random() - 0.5) * safeX; startY = (Math.random() * 8) - 1; overlapping = false;
                     for (let w of activeWords) {
                         if (w.mesh.position.z < -60) {
-                            let distX = Math.abs(w.mesh.position.x - startX);
-                            let distY = Math.abs(w.mesh.position.y - startY);
-                            if (distX < 4.0 && distY < 1.5) {
-                                overlapping = true;
-                                break;
-                            }
+                            let distX = Math.abs(w.mesh.position.x - startX); let distY = Math.abs(w.mesh.position.y - startY);
+                            if (distX < 4.0 && distY < 2.0) { overlapping = true; break; }
                         }
                     }
                     attempts++;
@@ -738,35 +854,68 @@
 
             let dx = 0; let dy = 0; let dz = 5 - (-90);
 
-            let meshMat = normalMat.clone(); if (isBoss) meshMat = bossMat.clone(); if (isNuke) meshMat = nukeMat.clone();
-            const mesh = new THREE.Mesh(boxGeo, meshMat);
-            mesh.position.set(startX, startY, -90);
+            let meshMat = normalMat.clone(); if (isBoss) meshMat = bossMat.clone(); if (isNuke) meshMat = nukeMat.clone(); if (isBonus) meshMat = bonusMat.clone();
+            const mesh = new THREE.Mesh(boxGeo, meshMat); mesh.position.set(startX, startY, -90);
             if (isBoss || isNuke) mesh.scale.set(3, 3, 3);
             scene.add(mesh);
 
-            const label = document.createElement('div'); label.className = `word-label ${isBoss ? 'boss-label' : ''} ${isNuke ? 'bomb-label' : ''}`;
-            label.innerHTML = (isNuke ? `<span class="text-sm block text-yellow-300 animate-pulse tracking-widest">[BOMBA]</span>` : '') + `<span class="untyped">${text}</span>`;
-            labelsContainer.appendChild(label);
+            let isGhost = (currentDiff === 'hard' || level >= 4) && Math.random() < 0.3 && !isBoss && !isNuke;
 
-            activeWords.push({ text: text, typedLength: 0, mesh: mesh, label: label, isBoss: isBoss, isNuke: isNuke, speedMult: (isBoss || isNuke) ? 0.5 : 1.0, dx: dx, dy: dy, dz: dz, startTime: Date.now(), hadError: false });
+            const label = document.createElement('div'); label.className = `word-label`;
+            label.innerHTML = buildLabelHTML("", text, isBoss, isNuke, isBonus);
+            if (labelsContainer) labelsContainer.appendChild(label);
+
+            activeWords.push({ text: text, typedLength: 0, mesh: mesh, label: label, isBoss: isBoss, isNuke: isNuke, isBonus: isBonus, isGhost: isGhost, speedMult: (isBoss || isNuke) ? 0.5 : 1.0, dx: dx, dy: dy, dz: dz, startTime: Date.now(), hadError: false });
         }
 
-        function resetCombo() { comboWordsCount = 0; comboMultiplier = 1; comboContainer.classList.add('hidden'); updateComboUI(); }
+        // MATN RANGI YASHIL BO'LISHI UCHUN ENG MUHIM FUNKSIYA
+        function buildLabelHTML(typed, untyped, isBoss, isNuke, isBonus) {
+            const bombPrefix = isNuke ? `<span class="text-sm block text-yellow-300 animate-pulse tracking-widest">[BOMBA]</span>` : '';
+            const bonusPrefix = isBonus ? `<span class="text-sm block text-fuchsia-400 animate-pulse tracking-widest">[x2 BALL]</span>` : '';
+
+            // Yozilgan (Typed) harflar doim sof yashil va yashil nurlanishga ega bo'ladi
+            const typedPart = `<span class="text-green-400 drop-shadow-[0_0_10px_#4ade80]">${typed}</span>`;
+
+            // Yozilmagan harflar so'zning turiga qarab o'zgaradi
+            let untypedStyle = "color: inherit;";
+            if (isBoss) untypedStyle = "color: #f87171; text-shadow: 4px 4px 0 #450a0a, 0 0 20px #ef4444;";
+            if (isNuke) untypedStyle = "color: #facc15; text-shadow: 3px 3px 0 #713f12, 0 0 20px #eab308;";
+            if (isBonus) untypedStyle = "color: #e879f9; text-shadow: 3px 3px 0 #4a044e, 0 0 20px #d946ef;";
+
+            const untypedPart = `<span style="${untypedStyle}">${untyped}</span>`;
+
+            return bombPrefix + bonusPrefix + typedPart + untypedPart;
+        }
+
+        function updateLabel(wObj) {
+            const typedStr = wObj.text.substring(0, wObj.typedLength);
+            const untypedStr = wObj.text.substring(wObj.typedLength);
+            wObj.label.innerHTML = buildLabelHTML(typedStr, untypedStr, wObj.isBoss, wObj.isNuke, wObj.isBonus);
+        }
+
+        function resetCombo() { comboWordsCount = 0; comboMultiplier = 1; wordsWithoutError = 0; if (comboContainer) comboContainer.classList.add('hidden'); updateComboUI(); }
+
         function updateComboUI() {
             if (comboMultiplier > 1 || comboWordsCount > 0) {
-                comboContainer.classList.remove('hidden'); comboDisplay.innerText = `x${comboMultiplier}`;
+                if (comboContainer) comboContainer.classList.remove('hidden'); if (comboDisplay) comboDisplay.innerText = `x${comboMultiplier}`;
                 let progress = comboWordsCount % 10; if (comboMultiplier >= 5) progress = 10;
-                document.getElementById('comboProgress').innerText = `${progress}/10 so'z`;
+                if (document.getElementById('comboProgress')) document.getElementById('comboProgress').innerText = `${progress}/10 so'z`;
             }
         }
+
         function handleWordComplete(wObj) {
-            comboWordsCount++;
+            comboWordsCount++; wordsWithoutError++;
             if (comboWordsCount % 10 === 0 && comboMultiplier < 5) {
-                comboMultiplier++;
-                comboDisplay.classList.remove('combo-pop'); void comboDisplay.offsetWidth; comboDisplay.classList.add('combo-pop');
+                comboMultiplier++; if (comboDisplay) { comboDisplay.classList.remove('combo-pop'); void comboDisplay.offsetWidth; comboDisplay.classList.add('combo-pop'); }
             }
             if (comboMultiplier > maxComboReached) maxComboReached = comboMultiplier;
             updateComboUI();
+
+            if (wordsWithoutError === 10) showStreak("SUPER COMBO!");
+            if (wordsWithoutError === 20) showStreak("UNSTOPPABLE!");
+            if (wordsWithoutError === 30) showStreak("GODLIKE!");
+
+            if (wordsWithoutError === 20 && !hasShield) { hasShield = true; updateHealth(); playSound('victory'); }
 
             if (!wObj.hadError && (Date.now() - wObj.startTime) < 1500) {
                 const vector = wObj.mesh.position.clone(); vector.project(camera);
@@ -777,10 +926,7 @@
 
         function handleKeyPress(keyStr) {
             if (!gameActive || isPaused) { if (keyStr === 'Enter' && !isPaused) startGame(); return; }
-            if (keyStr === 'Backspace' && targetedWord) {
-                targetedWord.typedLength = 0; targetedWord.mesh.material.color.setHex(targetedWord.isNuke ? 0xfacc15 : (targetedWord.isBoss ? 0xef4444 : 0x334155));
-                updateLabel(targetedWord); targetedWord = null; playSound('error'); resetCombo(); return;
-            }
+            if (keyStr === 'Backspace' && targetedWord) { targetedWord.typedLength = 0; updateLabel(targetedWord); targetedWord = null; playSound('error'); resetCombo(); return; }
             if (!isLetterOrApostrophe(keyStr)) return;
 
             totalStrokes++; let typedChar = cleanWord(keyStr.toLowerCase());
@@ -788,51 +934,55 @@
             if (!targetedWord) {
                 let closestWord = null; let closestDist = Infinity;
                 for (let wordObj of activeWords) {
+                    if (!wordObj.text || wordObj.text.length === 0) continue; // Xavfsizlik
                     let firstExpectedChar = wordObj.text[0].toLowerCase();
                     if (firstExpectedChar === typedChar) { if (wordObj.mesh.position.z < closestDist) { closestDist = wordObj.mesh.position.z; closestWord = wordObj; } }
                 }
                 if (closestWord) { targetedWord = closestWord; targetedWord.mesh.material.color.setHex(0x4ade80); targetedWord.startTime = Date.now(); }
             }
 
-            if (targetedWord) {
+            if (targetedWord && targetedWord.typedLength < targetedWord.text.length) {
                 let expectedChar = targetedWord.text[targetedWord.typedLength].toLowerCase();
                 if (typedChar === expectedChar) {
                     targetedWord.typedLength++; correctStrokes++; playSound('type', comboMultiplier); updateLabel(targetedWord); shootLaser(targetedWord.mesh.position, true);
-                    if (targetedWord.isBoss || targetedWord.isNuke) { targetedWord.mesh.position.x += (Math.random() - 0.5) * 0.5; targetedWord.mesh.position.y += (Math.random() - 0.5) * 0.5; }
+                    if (targetedWord.isBoss || targetedWord.isNuke || targetedWord.isBonus) { targetedWord.mesh.position.x += (Math.random() - 0.5) * 0.5; targetedWord.mesh.position.y += (Math.random() - 0.5) * 0.5; }
+
                     if (targetedWord.typedLength === targetedWord.text.length) {
                         handleWordComplete(targetedWord);
-                        if (targetedWord.isNuke) triggerNuke(); else destroyWord(targetedWord);
+                        if (targetedWord.isNuke) triggerNuke();
+                        else {
+                            if (targetedWord.isBonus) { doublePointsActive = true; doublePointsEndTime = Date.now() + 10000; if (bonusBanner) bonusBanner.classList.remove('hidden'); playSound('boss_die'); }
+                            destroyWord(targetedWord);
+                        }
                     }
-                } else { playSound('error'); shootLaser(targetedWord.mesh.position, false); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); targetedWord.hadError = true; resetCombo(); }
-            } else { playSound('error'); shootLaser(new THREE.Vector3((Math.random() - 0.5) * 10, Math.random() * 5, -20), false); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); resetCombo(); }
+                } else { playSound('error'); shootLaser(targetedWord.mesh.position, false); if (flashOverlay) { flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); } targetedWord.hadError = true; resetCombo(); }
+            } else if (!targetedWord) { playSound('error'); shootLaser(new THREE.Vector3((Math.random() - 0.5) * 10, Math.random() * 5, -20), false); if (flashOverlay) { flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); } resetCombo(); }
+        }
+
+        function returnToMenu() {
+            isPaused = false; gameActive = false; audioCtx.resume(); stopBGM(); if (pauseOverlay) pauseOverlay.classList.add('hidden');
+            activeWords.forEach(w => { scene.remove(w.mesh); w.label.remove(); }); activeWords = [];
+            if (overlay) { overlay.classList.remove('hidden'); overlay.classList.add('flex'); }
+            if (settingsBlock) settingsBlock.classList.remove('hidden'); if (profileHeader) profileHeader.classList.remove('hidden');
+            if (startBtn) startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">YANGI O'YIN</span>`;
+            if (telegramAd) telegramAd.classList.remove('hidden');
         }
 
         function togglePause() {
-            if (!gameActive) return;
-            isPaused = !isPaused;
-            if (isPaused) {
-                pauseOverlay.classList.remove('hidden'); pauseStartTime = Date.now(); audioCtx.suspend();
-            } else {
-                pauseOverlay.classList.add('hidden'); totalPausedTime += (Date.now() - pauseStartTime); audioCtx.resume(); mobileInput.focus();
-            }
+            if (!gameActive) return; isPaused = !isPaused;
+            if (isPaused) { if (pauseOverlay) pauseOverlay.classList.remove('hidden'); pauseStartTime = Date.now(); audioCtx.suspend(); }
+            else { if (pauseOverlay) pauseOverlay.classList.add('hidden'); totalPausedTime += (Date.now() - pauseStartTime); audioCtx.resume(); if (mobileInput) mobileInput.focus(); }
         }
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') { togglePause(); return; }
-            if (e.target.tagName === 'INPUT' && e.target !== mobileInput) return;
-            if (e.target === mobileInput && e.key !== 'Enter' && e.key !== 'Backspace') return;
-            handleKeyPress(e.key);
-        });
-        mobileInput.addEventListener('input', (e) => { const val = e.target.value; if (val.length > 0) { handleKeyPress(val[val.length - 1]); e.target.value = ''; } });
-        document.body.addEventListener('click', (e) => { if (gameActive && !isPaused && e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A' && e.target.closest('a') === null) { mobileInput.focus(); } });
-
-        function updateLabel(wordObj) { const typedStr = wordObj.text.substring(0, wordObj.typedLength); const untypedStr = wordObj.text.substring(wordObj.typedLength); const bombPrefix = wordObj.isNuke ? `<span class="text-sm block text-yellow-300 animate-pulse tracking-widest">[BOMBA]</span>` : ''; wordObj.label.innerHTML = bombPrefix + `<span class="typed">${typedStr}</span><span class="untyped">${untypedStr}</span>`; }
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { togglePause(); return; } if (e.target.tagName === 'INPUT' && e.target !== mobileInput) return; if (e.target === mobileInput && e.key !== 'Enter' && e.key !== 'Backspace') return; handleKeyPress(e.key); });
+        if (mobileInput) mobileInput.addEventListener('input', (e) => { const val = e.target.value; if (val.length > 0) { handleKeyPress(val[val.length - 1]); e.target.value = ''; } });
+        document.body.addEventListener('click', (e) => { if (gameActive && !isPaused && e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A' && e.target.closest('a') === null) { if (mobileInput) mobileInput.focus(); } });
 
         function destroyWord(wordObj) {
             playSound('destroy');
             if (wordObj.isBoss) { triggerCameraShake(30, 1.5); playSound('boss_die'); }
             createExplosion(wordObj.mesh.position, wordObj.isBoss); scene.remove(wordObj.mesh); wordObj.label.remove(); activeWords = activeWords.filter(w => w !== wordObj); targetedWord = null; totalWordsTyped++;
-            const diffMultiplier = currentDiff === 'easy' ? 1 : (currentDiff === 'medium' ? 1.5 : 2); let points = wordObj.isBoss ? wordObj.text.length * 50 : wordObj.text.length * 10; points = points * diffMultiplier * comboMultiplier; score += Math.round(points); scoreDisplay.innerText = score; speed += 0.001;
+            const diffMultiplier = currentDiff === 'easy' ? 1 : (currentDiff === 'medium' ? 1.5 : 2); let points = wordObj.isBoss ? wordObj.text.length * 50 : (wordObj.isNuke ? 500 : wordObj.text.length * 10); points = points * diffMultiplier * comboMultiplier * (doublePointsActive ? 2 : 1); score += Math.round(points); if (scoreDisplay) scoreDisplay.innerText = score; speed += 0.001;
         }
 
         function updateLabelsPosition() {
@@ -842,11 +992,14 @@
 
                 let dist = Math.abs(camera.position.z - wordObj.mesh.position.z);
                 let scale = Math.max(0.6, 20 / Math.max(20, dist));
-
-                if (wordObj.isBoss) scale *= 1.5;
-                if (wordObj.isNuke) scale *= 1.3;
+                if (wordObj.isBoss) scale *= 1.5; if (wordObj.isNuke) scale *= 1.3;
 
                 wordObj.label.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale})`;
+
+                if (wordObj.isGhost) {
+                    if (wordObj.mesh.position.z > -70 && wordObj.mesh.position.z < -30) { wordObj.label.style.opacity = Math.max(0.1, Math.abs(Math.sin(Date.now() * 0.005))); }
+                    else { wordObj.label.style.opacity = 1; }
+                }
             });
         }
 
@@ -859,36 +1012,49 @@
             else { camera.position.set(0, 2, 8); }
 
             if (gameActive && !isPaused) {
-                gridHelper.position.z += speed; if (gridHelper.position.z > 10) gridHelper.position.z = 0;
+                if (doublePointsActive && Date.now() > doublePointsEndTime) { doublePointsActive = false; if (bonusBanner) bonusBanner.classList.add('hidden'); }
+
+                let currentSpeed = speed;
+                if (warpFrames > 0) { currentSpeed *= 5; warpFrames--; }
+
+                gridHelper.position.z += currentSpeed; if (gridHelper.position.z > 10) gridHelper.position.z = 0;
 
                 const positions = starMesh.geometry.attributes.position.array;
                 for (let i = 2; i < starsCount * 3; i += 3) {
-                    positions[i] += speed * 25;
+                    positions[i] += currentSpeed * (warpFrames > 0 ? 50 : 25);
                     if (positions[i] > 8) { positions[i] = -150; positions[i - 1] = (Math.random() - 0.5) * 150; positions[i - 2] = (Math.random() - 0.5) * 150; }
                 }
                 starMesh.geometry.attributes.position.needsUpdate = true; starMesh.rotation.z += 0.0005;
 
                 for (let i = lasers.length - 1; i >= 0; i--) { lasers[i].life--; lasers[i].mesh.material.opacity = lasers[i].life / 10; lasers[i].mesh.material.transparent = true; if (lasers[i].life <= 0) { scene.remove(lasers[i].mesh); lasers[i].mesh.geometry.dispose(); lasers.splice(i, 1); } }
-                for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.mesh.position.x += p.vx; p.mesh.position.y += p.vy; p.mesh.position.z += p.vz; p.life--; if (p.life <= 0) { scene.remove(p.mesh); p.mesh.geometry.dispose(); particles.splice(i, 1); } }
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    let p = particles[i]; p.vy -= 0.15; p.mesh.position.x += p.vx; p.mesh.position.y += p.vy; p.mesh.position.z += p.vz; p.life--;
+                    if (p.life <= 0) { scene.remove(p.mesh); p.mesh.geometry.dispose(); particles.splice(i, 1); }
+                }
+
                 for (let i = trails.length - 1; i >= 0; i--) { let t = trails[i]; t.mesh.material.opacity = t.life / 15; t.mesh.material.transparent = true; t.mesh.scale.multiplyScalar(0.9); t.life--; if (t.life <= 0) { scene.remove(t.mesh); t.mesh.geometry.dispose(); trails.splice(i, 1); } }
 
                 for (let i = activeWords.length - 1; i >= 0; i--) {
                     let wordObj = activeWords[i];
-                    let speedZ = speed * wordObj.speedMult;
-
-                    wordObj.mesh.position.z += speedZ;
-                    wordObj.mesh.rotation.y = Math.sin(Date.now() * 0.002) * 0.2;
-
-                    if (Math.random() > 0.6) createTrail(wordObj.mesh.position);
+                    let speedZ = currentSpeed * wordObj.speedMult;
+                    wordObj.mesh.position.z += speedZ; wordObj.mesh.rotation.y = Math.sin(Date.now() * 0.002) * 0.2;
+                    if (Math.random() > 0.6 && warpFrames == 0) createTrail(wordObj.mesh.position);
 
                     if (wordObj.mesh.position.z > 5) {
-                        playSound('damage'); triggerCameraShake(20, 0.8);
+                        if (hasShield) { hasShield = false; updateHealth(); playSound('shield_break'); triggerCameraShake(15, 1.0); }
+                        else { playSound('damage'); triggerCameraShake(20, 0.8); health--; updateHealth(); }
                         scene.remove(wordObj.mesh); wordObj.label.remove(); activeWords.splice(i, 1);
                         if (targetedWord === wordObj) { targetedWord = null; resetCombo(); }
-                        health--; updateHealth();
                     }
                 }
                 updateLabelsPosition(); const currentTime = Date.now();
+
+                if (currentTime - lastLiveWPMUpdate > 1000) {
+                    let mins = (currentTime - totalPausedTime - gameStartTime) / 60000;
+                    if (document.getElementById('liveWPM')) document.getElementById('liveWPM').innerText = mins > 0 ? Math.round((correctStrokes / 5) / mins) : 0;
+                    lastLiveWPMUpdate = currentTime;
+                }
+
                 if (currentTime - totalPausedTime - lastSpawnTime >= baseSpawnRate) { spawnWord(); lastSpawnTime = currentTime - totalPausedTime; }
             }
             renderer.render(scene, camera);
@@ -897,32 +1063,36 @@
         function startGame() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             activeWords.forEach(w => { scene.remove(w.mesh); w.label.remove(); }); lasers.forEach(l => { scene.remove(l.mesh); l.mesh.geometry.dispose(); }); particles.forEach(p => { scene.remove(p.mesh); p.mesh.geometry.dispose(); }); trails.forEach(t => { scene.remove(t.mesh); t.mesh.geometry.dispose(); });
-            activeWords = []; targetedWord = null; score = 0; level = 1; wordsSpawnedCount = 0; speed = baseSpeed; health = 3;
-            totalWordsTyped = 0; correctStrokes = 0; totalStrokes = 0; gameStartTime = Date.now(); lastSpawnTime = Date.now(); lastNukeTime = Date.now(); maxComboReached = 1; totalPausedTime = 0; isPaused = false;
+            activeWords = []; targetedWord = null; score = 0; level = 1; wordsSpawnedCount = 0; speed = baseSpeed; health = 3; hasShield = false; doublePointsActive = false; if (bonusBanner) bonusBanner.classList.add('hidden');
+            totalWordsTyped = 0; correctStrokes = 0; totalStrokes = 0; gameStartTime = Date.now(); lastSpawnTime = Date.now(); lastNukeTime = Date.now(); maxComboReached = 1; totalPausedTime = 0; isPaused = false; wordsWithoutError = 0; lastLiveWPMUpdate = Date.now();
 
-            scoreDisplay.innerText = score; levelDisplay.innerText = level; updateHealth(); resetCombo(); startBGM();
-            gameActive = true; pauseBtn.classList.remove('hidden'); overlay.classList.add('hidden'); overlay.classList.remove('flex'); settingsBlock.classList.add('hidden'); profileHeader.classList.add('hidden'); currentStatsBlock.classList.add('hidden'); backToSettingsBtn.classList.add('hidden');
-            mobileInput.focus();
+            if (scoreDisplay) scoreDisplay.innerText = score; if (levelDisplay) levelDisplay.innerText = level; updateHealth(); resetCombo(); startBGM();
+            scene.background = new THREE.Color(0x03050a); scene.fog.color = new THREE.Color(0x03050a);
+
+            gameActive = true; if (pauseBtn) pauseBtn.classList.remove('hidden'); if (overlay) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); } if (settingsBlock) settingsBlock.classList.add('hidden'); if (profileHeader) profileHeader.classList.add('hidden'); if (currentStatsBlock) currentStatsBlock.classList.add('hidden'); if (backToSettingsBtn) backToSettingsBtn.classList.add('hidden'); if (telegramAd) telegramAd.classList.add('hidden');
+            if (mobileInput) mobileInput.focus();
         }
 
         function gameOver() {
-            gameActive = false; mobileInput.blur(); stopBGM(); pauseBtn.classList.add('hidden'); resetCombo();
+            gameActive = false; if (mobileInput) mobileInput.blur(); stopBGM(); if (pauseBtn) pauseBtn.classList.add('hidden'); resetCombo(); doublePointsActive = false; if (bonusBanner) bonusBanner.classList.add('hidden');
             let playTimeMs = Date.now() - totalPausedTime - gameStartTime; let timeInMinutes = playTimeMs / 60000; let formattedTime = formatTime(playTimeMs);
             let wpm = timeInMinutes > 0 ? Math.round((correctStrokes / 5) / timeInMinutes) : 0; let accuracy = totalStrokes > 0 ? Math.round((correctStrokes / totalStrokes) * 100) : 0;
 
             let curStats = userProfile.stats[currentDiff]; curStats.gamesPlayed++; curStats.wordsTyped += totalWordsTyped;
             if (wpm > curStats.bestWPM) curStats.bestWPM = wpm;
 
+            if (!curStats.history) curStats.history = []; curStats.history.push(wpm); if (curStats.history.length > 15) curStats.history.shift();
+
             let isNewRecord = false; if (score > curStats.highScore && score > 0) { curStats.highScore = score; isNewRecord = true; }
             saveProfile(); updateUIHeaders();
 
-            if (isNewRecord) { playSound('victory'); mainTitle.innerText = "YANGI REKORD! 🏆"; mainTitle.className = "text-3xl sm:text-6xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 to-yellow-600 drop-shadow-2xl mb-6 text-center leading-normal py-2 whitespace-nowrap"; }
-            else { playSound('error'); mainTitle.innerText = "MAG'LUBIYAT!"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-red-500 drop-shadow-2xl mb-6 text-center leading-normal py-2"; }
+            if (isNewRecord) { playSound('victory'); if (mainTitle) { mainTitle.innerText = "YANGI REKORD! 🏆"; mainTitle.className = "text-3xl sm:text-6xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-br from-yellow-300 to-yellow-600 drop-shadow-2xl mb-6 text-center leading-normal py-2 whitespace-nowrap"; } }
+            else { playSound('error'); if (mainTitle) { mainTitle.innerText = "MAG'LUBIYAT!"; mainTitle.className = "text-4xl sm:text-7xl font-black tracking-widest text-red-500 drop-shadow-2xl mb-6 text-center leading-normal py-2"; } }
 
-            statWPM.innerText = wpm; statAcc.innerText = accuracy + "%"; statWords.innerText = totalWordsTyped; statLevel.innerText = level; document.getElementById('statTime').innerText = formattedTime; document.getElementById('statCombo').innerText = `x${maxComboReached}`;
-            startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">YANA BIR BOR</span><span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>`;
-            currentStatsBlock.classList.remove('hidden'); backToSettingsBtn.classList.remove('hidden'); profileHeader.classList.remove('hidden');
-            overlay.classList.remove('hidden'); overlay.classList.add('flex'); overlay.style.backgroundColor = 'rgba(5, 8, 20, 0.95)';
+            if (statWPM) statWPM.innerText = wpm; if (statAcc) statAcc.innerText = accuracy + "%"; if (statWords) statWords.innerText = totalWordsTyped; if (statLevel) statLevel.innerText = level; if (document.getElementById('statTime')) document.getElementById('statTime').innerText = formattedTime; if (document.getElementById('statCombo')) document.getElementById('statCombo').innerText = `x${maxComboReached}`;
+            if (startBtn) startBtn.innerHTML = `<span class="text-lg sm:text-xl font-bold text-white block">YANA BIR BOR</span><span class="block mt-1 text-xs text-green-200">(yoki ENTER bosing)</span>`;
+            if (currentStatsBlock) currentStatsBlock.classList.remove('hidden'); if (backToSettingsBtn) backToSettingsBtn.classList.remove('hidden'); if (profileHeader) profileHeader.classList.remove('hidden'); if (telegramAd) telegramAd.classList.remove('hidden');
+            if (overlay) { overlay.classList.remove('hidden'); overlay.classList.add('flex'); overlay.style.backgroundColor = 'rgba(5, 8, 20, 0.95)'; }
         }
 
         animate();
@@ -930,4 +1100,3 @@
 </body>
 
 </html>
-
