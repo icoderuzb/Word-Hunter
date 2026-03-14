@@ -238,7 +238,7 @@
                             d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.332-5.467-5.93 0-1.31.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                     </svg><span class="hidden sm:inline">GitHub</span></a>
             </div>
-            <p class="text-xs text-slate-500 mt-2">&copy; 2026 Word Game. Barcha huquqlar himoyalangan.</p>
+            <p class="text-xs text-slate-500 mt-2">&copy; 2026 So'zlar Hujumi O'yini. Barcha huquqlar himoyalangan.</p>
         </footer>
     </div>
 
@@ -255,6 +255,25 @@
                     class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-colors">Bekor</button>
                 <button onclick="saveNameFromModal()"
                     class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-blue-500/30">Saqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="clearStatsModal"
+        class="hidden absolute inset-0 bg-slate-950/90 z-[70] flex items-center justify-center p-4 backdrop-blur-md transition-opacity duration-300 opacity-0">
+        <div class="bg-slate-900 border border-red-500/50 rounded-3xl p-6 sm:p-8 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300"
+            id="clearStatsModalContent">
+            <div class="text-red-500 text-5xl mb-4 text-center">⚠️</div>
+            <h3 class="text-2xl font-bold text-white mb-2 text-center tracking-wider">Diqqat!</h3>
+            <p class="text-slate-400 text-center text-sm mb-8">Rostdan ham barcha statistika va rekordlarni
+                o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.</p>
+            <div class="flex gap-4">
+                <button onclick="closeClearStatsModal()"
+                    class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-colors">Yo'q,
+                    qaytish</button>
+                <button onclick="confirmClearStats()"
+                    class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-red-500/30">Ha,
+                    o'chirish</button>
             </div>
         </div>
     </div>
@@ -313,9 +332,17 @@
                 </div>
             </div>
         </div>
-        <button onclick="closeOverallStats()"
-            class="mt-8 mb-8 bg-slate-700 hover:bg-slate-600 px-8 py-4 rounded-xl text-white font-bold tracking-widest transition cursor-pointer shadow-lg shrink-0">ORTGA
-            QAYTISH</button>
+
+        <div class="flex flex-col sm:flex-row gap-4 mt-10 mb-8 shrink-0 w-full max-w-xl px-4 justify-center">
+            <button onclick="openClearStatsModal()"
+                class="bg-red-600/20 hover:bg-red-600/40 border border-red-500/50 px-6 py-3 rounded-xl text-red-400 hover:text-white font-bold tracking-wider transition cursor-pointer shadow-lg w-full sm:w-auto">
+                🗑️ TOZALASH
+            </button>
+            <button onclick="closeOverallStats()"
+                class="bg-slate-700 hover:bg-slate-600 px-8 py-3 rounded-xl text-white font-bold tracking-widest transition cursor-pointer shadow-lg w-full sm:w-auto">
+                ORTGA QAYTISH
+            </button>
+        </div>
     </div>
 
     <input type="text" id="mobileInput" class="absolute top-0 left-0 opacity-0 w-0 h-0" autocomplete="off"
@@ -327,19 +354,20 @@
         const overlay = document.getElementById('overlay'); const mainTitle = document.getElementById('mainTitle'); const settingsBlock = document.getElementById('settingsBlock'); const currentStatsBlock = document.getElementById('currentStatsBlock'); const startBtn = document.getElementById('startBtn'); const backToSettingsBtn = document.getElementById('backToSettingsBtn'); const mobileInput = document.getElementById('mobileInput'); const profileHeader = document.getElementById('profileHeader');
         const playerNameDisplay = document.getElementById('playerNameDisplay'); const modalPlayerName = document.getElementById('modalPlayerName'); const overallStatsModal = document.getElementById('overallStatsModal');
         const nameModal = document.getElementById('nameModal'); const newNameInput = document.getElementById('newNameInput'); const nameModalContent = document.getElementById('nameModalContent');
+        const clearStatsModal = document.getElementById('clearStatsModal'); const clearStatsModalContent = document.getElementById('clearStatsModalContent');
         const statWPM = document.getElementById('statWPM'); const statAcc = document.getElementById('statAcc'); const statWords = document.getElementById('statWords'); const statLevel = document.getElementById('statLevel');
         const scoreDisplay = document.getElementById('scoreDisplay'); const levelDisplay = document.getElementById('levelDisplay'); const recordDisplay = document.getElementById('recordDisplay'); const diffDisplayTop = document.getElementById('diffDisplayTop'); const diffDesc = document.getElementById('diffDesc'); const labelsContainer = document.getElementById('labelsContainer'); const flashOverlay = document.getElementById('flashOverlay');
         const comboContainer = document.getElementById('comboContainer'); const comboDisplay = document.getElementById('comboDisplay');
 
-        // LUG'ATLAR (O'zbekcha)
-        const lvl1Words = ["olma", "suv", "gul", "bol", "non", "kuz", "yoz", "uy", "tom", "ona", "uka", "opa", "kuch", "qand", "qish", "kema", "fil", "sher", "qoy", "tog", "bog'", "qiz", "xat", "choy", "sir", "til", "yuz", "ko'z", "zar", "dam"];
-        const lvl2Words = ["bahor", "kitob", "qalam", "anjir", "xurmo", "shahar", "osmon", "bulut", "yigit", "daryo", "vatan", "tuya", "paxta", "havo", "dars", "olcha", "piyoz", "sabzi", "bodom", "hayot", "soat", "og'il", "to'y"];
-        const lvl3Words = ["quyosh", "choynak", "o'rtoq", "daftar", "maktab", "daraxt", "bayram", "yulduz", "chiroq", "mehmon", "yomg'ir", "yaproq", "shirin", "tuman", "doston", "baraka", "bayroq", "quvnoq", "pichoq", "qo'shiq"];
-        const lvl4Words = ["toshbaqa", "kelajak", "imtihon", "samolyot", "kamalak", "kapalak", "darslik", "tarbiya", "poytaxt", "sadoqat", "diyonat", "tabiat", "jasorat", "g'alaba", "orzu", "do'stlik"];
-        const lvl5Words = ["muvaffaqiyat", "texnologiya", "respublika", "universitet", "mustaqillik", "o'qituvchi", "sarguzasht", "vatanparvar", "tadbirkorlik", "konstitutsiya", "g'urur"];
-        const bossWords = ["KIBERXAVFSIZLIK", "ENSIKLOPEDIYA", "QAHRAMONLIK", "INFRATUZILMA", "KOSMONAVTIKA", "LABORATORIYA", "ARXITEKTURA", "ASTRONOMIYA"];
+        // LUG'ATLAR
+        const lvl1Words = ["olma", "suv", "gul", "bol", "non", "kuz", "yoz", "uy", "tom", "ona", "uka", "opa", "kuch", "qand", "qish", "kema", "fil", "sher", "qo'y", "tog'", "bog'", "qiz", "xat", "choy", "sir", "til", "yuz", "ko'z", "zar", "dam", "yil", "oy", "kun", "so'z", "dunyo", "yo'l", "sham", "qush", "baliq", "yomg'ir", "tosh", "yaproq"];
+        const lvl2Words = ["bahor", "kitob", "qalam", "anjir", "xurmo", "shahar", "osmon", "bulut", "yigit", "daryo", "vatan", "tuya", "paxta", "havo", "dars", "olcha", "piyoz", "sabzi", "bodom", "hayot", "soat", "o'g'il", "to'y", "qizil", "ko'k", "sariq", "oq", "qora", "yashil", "pushti", "moviy", "binafsha", "kumush", "oltin", "temir", "shisha", "plastik", "qog'oz", "taxta", "mashina", "avtobus", "velosiped", "telefon", "kompyuter", "televizor", "radio", "kamera", "sochiq", "yostiq", "ko'rpa"];
+        const lvl3Words = ["quyosh", "choynak", "o'rtoq", "daftar", "maktab", "daraxt", "bayram", "yulduz", "chiroq", "mehmon", "yomg'ir", "yaproq", "shirin", "tuman", "doston", "baraka", "bayroq", "quvnoq", "pichoq", "qo'shiq", "suvsizlik", "qorong'u", "yashil", "ko'prik", "tosh", "shamol", "qayiq"];
+        const lvl4Words = ["toshbaqa", "kelajak", "imtihon", "samolyot", "kamalak", "kapalak", "darslik", "tarbiya", "poytaxt", "sadoqat", "diyonat", "tabiat", "jasorat", "g'alaba", "orzu", "do'stlik", "sabr-toqat", "mehribonlik", "yaxshilik", "yurtsevar", "muhabbat", "sog'liq", "farzand", "oqibat", "afsus", "hayajon"];
+        const lvl5Words = ["muvaffaqiyat", "texnologiya", "respublika", "universitet", "mustaqillik", "o'qituvchi", "sarguzasht", "vatanparvar", "tadbirkorlik", "konstitutsiya", "g'urur", "farovonlik", "yuksalish", "ijtimoiy", "madaniyat", "tarix", "ilm-fan"];
+        const bossWords = ["KIBERXAVFSIZLIK", "ENSIKLOPEDIYA", "QAHRAMONLIK", "INFRATUZILMA", "KOSMONAVTIKA", "LABORATORIYA", "ARXITEKTURA", "ASTRONOMIYA", "INFORMATIKA", "ELEKTRONIKA", "MATEMATIKA", "FIZIKA", "KIMYO", "BIOLOGIYA", "PSIXOLOGIYA", "SAN'ATKORLIK"];
 
-        // PROFIL VA STATISTIKA (V3)
+        // PROFIL VA STATISTIKA
         let userProfile = JSON.parse(localStorage.getItem('typingGameProfile_v3')) || {
             playerName: "ICODERUZB", lastDifficulty: 'medium',
             stats: {
@@ -362,10 +390,47 @@
         diffDesc.innerText = difficultySettings[currentDiff].desc; recordDisplay.innerText = userProfile.stats[currentDiff].highScore; diffDisplayTop.innerText = difficultySettings[currentDiff].label;
 
         function saveProfile() { localStorage.setItem('typingGameProfile_v3', JSON.stringify(userProfile)); }
+
         function openNameModal() { newNameInput.value = userProfile.playerName; nameModal.classList.remove('hidden'); setTimeout(() => { nameModal.classList.remove('opacity-0'); nameModalContent.classList.remove('scale-95'); nameModalContent.classList.add('scale-100'); newNameInput.focus(); }, 10); }
         function closeNameModal() { nameModal.classList.add('opacity-0'); nameModalContent.classList.remove('scale-100'); nameModalContent.classList.add('scale-95'); setTimeout(() => { nameModal.classList.add('hidden'); mobileInput.focus(); }, 300); }
         function saveNameFromModal() { let newName = newNameInput.value; if (newName && newName.trim() !== "") { userProfile.playerName = newName.trim().substring(0, 20); playerNameDisplay.innerText = userProfile.playerName; modalPlayerName.innerText = userProfile.playerName; saveProfile(); } closeNameModal(); }
         newNameInput.addEventListener('keypress', function (e) { if (e.key === 'Enter') saveNameFromModal(); });
+
+        // --- STATISTIKANI TOZALASH MODALI FUNKSIYALARI ---
+        function openClearStatsModal() {
+            clearStatsModal.classList.remove('hidden');
+            setTimeout(() => {
+                clearStatsModal.classList.remove('opacity-0');
+                clearStatsModalContent.classList.remove('scale-95');
+                clearStatsModalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeClearStatsModal() {
+            clearStatsModal.classList.add('opacity-0');
+            clearStatsModalContent.classList.remove('scale-100');
+            clearStatsModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                clearStatsModal.classList.add('hidden');
+            }, 300);
+        }
+
+        function confirmClearStats() {
+            // Faqat stats ob'ektini nollaymiz (ism qoladi)
+            userProfile.stats = {
+                easy: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 },
+                medium: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 },
+                hard: { highScore: 0, bestWPM: 0, gamesPlayed: 0, wordsTyped: 0 }
+            };
+            saveProfile();
+
+            // Ekranni yangilaymiz
+            showOverallStats();
+            recordDisplay.innerText = userProfile.stats[currentDiff].highScore;
+
+            closeClearStatsModal();
+        }
+        // ---------------------------------------------------
 
         function changeDifficulty(diff) {
             currentDiff = diff; baseSpeed = difficultySettings[diff].speedBase; baseSpawnRate = difficultySettings[diff].spawnRate; diffDesc.innerText = difficultySettings[diff].desc; userProfile.lastDifficulty = diff; saveProfile(); recordDisplay.innerText = userProfile.stats[diff].highScore; diffDisplayTop.innerText = difficultySettings[diff].label;
@@ -387,8 +452,7 @@
         let gameActive = false; let score = 0; let level = 1; let speed = 0;
         let activeWords = []; let targetedWord = null; let wordsSpawnedCount = 0; let lastSpawnTime = 0;
         let totalWordsTyped = 0; let correctStrokes = 0; let totalStrokes = 0; let gameStartTime = 0;
-        let comboMultiplier = 1; // COMBO O'ZGARUVCHISI
-        let comboCount = 0;
+        let comboMultiplier = 1; let comboCount = 0;
 
         const AudioContext = window.AudioContext || window.webkitAudioContext; const audioCtx = new AudioContext();
 
@@ -415,11 +479,7 @@
             return { xMin: (-width / 2) * marginFactor, xMax: (width / 2) * marginFactor, yMin: 1.5, yMax: (height / 2) * 0.6 };
         }
 
-        // TUGATILGAN APOSTROF MANTIG'I
-        function cleanWord(str) {
-            // Hamma xil apostroflarni bitta turga o'tkazamiz
-            return str.replace(/[‘’`]/g, "'");
-        }
+        function cleanWord(str) { return str.replace(/[‘’`]/g, "'"); }
 
         function isLetterOrApostrophe(char) {
             if (!char || char.length !== 1) return false;
@@ -463,24 +523,13 @@
             activeWords.push({ text: text, typedLength: 0, mesh: mesh, label: label, isBoss: isBoss, speedMult: isBoss ? 0.4 : 1.0 });
         }
 
-        // COMBO FUNKSIYALARI
-        function resetCombo() {
-            comboCount = 0;
-            comboMultiplier = 1;
-            comboContainer.classList.add('hidden');
-        }
-
+        function resetCombo() { comboCount = 0; comboMultiplier = 1; comboContainer.classList.add('hidden'); }
         function increaseCombo() {
             comboCount++;
             if (comboCount > 5) {
-                comboMultiplier = Math.min(5, 1 + Math.floor(comboCount / 5) * 0.5); // max 5x
-                comboContainer.classList.remove('hidden');
-                comboDisplay.innerText = `x${comboMultiplier}`;
-
-                // Pop animation
-                comboDisplay.classList.remove('combo-pop');
-                void comboDisplay.offsetWidth; // trigger reflow
-                comboDisplay.classList.add('combo-pop');
+                comboMultiplier = Math.min(5, 1 + Math.floor(comboCount / 5) * 0.5);
+                comboContainer.classList.remove('hidden'); comboDisplay.innerText = `x${comboMultiplier}`;
+                comboDisplay.classList.remove('combo-pop'); void comboDisplay.offsetWidth; comboDisplay.classList.add('combo-pop');
             }
         }
 
@@ -488,15 +537,11 @@
             if (!gameActive) { if (keyStr === 'Enter') startGame(); return; }
             if (keyStr === 'Backspace' && targetedWord) {
                 targetedWord.typedLength = 0; targetedWord.mesh.material.color.setHex(targetedWord.isBoss ? 0xef4444 : 0x334155);
-                updateLabel(targetedWord); targetedWord = null; playSound('error');
-                resetCombo();
-                return;
+                updateLabel(targetedWord); targetedWord = null; playSound('error'); resetCombo(); return;
             }
             if (!isLetterOrApostrophe(keyStr)) return;
 
-            totalStrokes++;
-            // Kiruvchi belgini tozalaymiz (agar har xil apostroflar kelsa)
-            let typedChar = cleanWord(keyStr.toLowerCase());
+            totalStrokes++; let typedChar = cleanWord(keyStr.toLowerCase());
 
             if (!targetedWord) {
                 let closestWord = null; let closestDist = Infinity;
@@ -511,20 +556,12 @@
                 let expectedChar = targetedWord.text[targetedWord.typedLength].toLowerCase();
 
                 if (typedChar === expectedChar) {
-                    targetedWord.typedLength++; correctStrokes++; playSound('type'); updateLabel(targetedWord);
-                    increaseCombo(); // Combo oshirish
+                    targetedWord.typedLength++; correctStrokes++; playSound('type'); updateLabel(targetedWord); increaseCombo();
 
                     if (targetedWord.isBoss) { targetedWord.mesh.position.x += (Math.random() - 0.5) * 0.5; targetedWord.mesh.position.y += (Math.random() - 0.5) * 0.5; }
-
                     if (targetedWord.typedLength === targetedWord.text.length) destroyWord(targetedWord);
-                } else {
-                    playSound('error'); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150);
-                    resetCombo(); // Xato qilsa combo nollanadi
-                }
-            } else {
-                playSound('error'); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150);
-                resetCombo();
-            }
+                } else { playSound('error'); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); resetCombo(); }
+            } else { playSound('error'); flashOverlay.style.opacity = '0.3'; setTimeout(() => { flashOverlay.style.opacity = '0'; }, 150); resetCombo(); }
         }
 
         window.addEventListener('keydown', (e) => {
@@ -532,30 +569,16 @@
             if (e.target === mobileInput && e.key !== 'Enter' && e.key !== 'Backspace') return;
             handleKeyPress(e.key);
         });
-        mobileInput.addEventListener('input', (e) => {
-            const val = e.target.value;
-            if (val.length > 0) {
-                // Mobildagi ba'zi klaviaturalar so'zni to'liq yuboradi, biz faqat oxirgi belgini olamiz
-                handleKeyPress(val[val.length - 1]);
-                e.target.value = '';
-            }
-        });
-        document.body.addEventListener('click', (e) => {
-            if (gameActive && e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A' && e.target.closest('a') === null) {
-                mobileInput.focus();
-            }
-        });
+        mobileInput.addEventListener('input', (e) => { const val = e.target.value; if (val.length > 0) { handleKeyPress(val[val.length - 1]); e.target.value = ''; } });
+        document.body.addEventListener('click', (e) => { if (gameActive && e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A' && e.target.closest('a') === null) { mobileInput.focus(); } });
 
         function updateLabel(wordObj) { const typedStr = wordObj.text.substring(0, wordObj.typedLength); const untypedStr = wordObj.text.substring(wordObj.typedLength); wordObj.label.innerHTML = `<span class="typed">${typedStr}</span><span class="untyped">${untypedStr}</span>`; }
 
         function destroyWord(wordObj) {
             playSound('destroy'); scene.remove(wordObj.mesh); wordObj.label.remove(); activeWords = activeWords.filter(w => w !== wordObj); targetedWord = null; totalWordsTyped++;
-
-            // Diff va Combo ga qarab ball hisoblash
             const diffMultiplier = currentDiff === 'easy' ? 1 : (currentDiff === 'medium' ? 1.5 : 2);
             let points = wordObj.isBoss ? wordObj.text.length * 50 : wordObj.text.length * 10;
             points = points * diffMultiplier * comboMultiplier;
-
             score += Math.round(points); scoreDisplay.innerText = score; speed += 0.001;
         }
 
@@ -592,7 +615,6 @@
             activeWords = []; targetedWord = null; score = 0; level = 1; wordsSpawnedCount = 0; speed = baseSpeed;
             totalWordsTyped = 0; correctStrokes = 0; totalStrokes = 0; gameStartTime = Date.now(); lastSpawnTime = Date.now();
             scoreDisplay.innerText = score; levelDisplay.innerText = level;
-
             resetCombo();
 
             gameActive = true;
@@ -609,15 +631,11 @@
             let accuracy = totalStrokes > 0 ? Math.round((correctStrokes / totalStrokes) * 100) : 0;
 
             let curStats = userProfile.stats[currentDiff];
-            curStats.gamesPlayed++;
-            curStats.wordsTyped += totalWordsTyped;
+            curStats.gamesPlayed++; curStats.wordsTyped += totalWordsTyped;
             if (wpm > curStats.bestWPM) curStats.bestWPM = wpm;
 
             let isNewRecord = false;
-            if (score > curStats.highScore && score > 0) {
-                curStats.highScore = score;
-                isNewRecord = true;
-            }
+            if (score > curStats.highScore && score > 0) { curStats.highScore = score; isNewRecord = true; }
 
             saveProfile();
             recordDisplay.innerText = curStats.highScore;
