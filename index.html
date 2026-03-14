@@ -351,6 +351,28 @@
     <div id="labelsContainer" class="absolute inset-0 pointer-events-none z-0"></div>
 
     <script>
+
+        // // O'ng tugmani bloklash
+        // document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // // F12 va Ctrl+Shift+I (Dasturchi asboblari) ni bloklash
+        // document.onkeydown = function (e) {
+        //     if (e.keyCode == 123) { // F12
+        //         return false;
+        //     }
+        //     if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { // Ctrl+Shift+I
+        //         return false;
+        //     }
+        //     if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { // Ctrl+Shift+C
+        //         return false;
+        //     }
+        //     if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { // Ctrl+Shift+J
+        //         return false;
+        //     }
+        //     if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { // Ctrl+U (Manba kodni ko'rish)
+        //         return false;
+        //     }
+        // }
         const overlay = document.getElementById('overlay'); const mainTitle = document.getElementById('mainTitle'); const settingsBlock = document.getElementById('settingsBlock'); const currentStatsBlock = document.getElementById('currentStatsBlock'); const startBtn = document.getElementById('startBtn'); const backToSettingsBtn = document.getElementById('backToSettingsBtn'); const mobileInput = document.getElementById('mobileInput'); const profileHeader = document.getElementById('profileHeader');
         const playerNameDisplay = document.getElementById('playerNameDisplay'); const modalPlayerName = document.getElementById('modalPlayerName'); const overallStatsModal = document.getElementById('overallStatsModal');
         const nameModal = document.getElementById('nameModal'); const newNameInput = document.getElementById('newNameInput'); const nameModalContent = document.getElementById('nameModalContent');
